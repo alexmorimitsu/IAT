@@ -1,0 +1,160 @@
+{
+  "src/lib/components/ImageSelector.react.js": {
+    "description": "ExampleComponent is an example component.\nIt takes a property, `label`, and\ndisplays it.\nIt renders an input with the property `value`\nwhich is editable by the user.",
+    "displayName": "ImageSelector",
+    "methods": [
+      {
+        "name": "allImagesSelected",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "images",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "onSelectImage",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "index",
+            "type": null
+          },
+          {
+            "name": "image",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "groupSelectedImages",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "setSelectedImages",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "images",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "onClickSelectAll",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      }
+    ],
+    "props": {
+      "id": {
+        "type": {
+          "name": "string"
+        },
+        "required": false,
+        "description": "The ID used to identify this component in Dash callbacks."
+      },
+      "selectedImages": {
+        "type": {
+          "name": "shape",
+          "value": {
+            "selected": {
+              "name": "arrayOf",
+              "value": {
+                "name": "number"
+              },
+              "required": false
+            },
+            "nonselected": {
+              "name": "arrayOf",
+              "value": {
+                "name": "number"
+              },
+              "required": false
+            }
+          }
+        },
+        "required": false,
+        "description": "The value displayed in the input."
+      },
+      "galleryHeaderStyle": {
+        "type": {
+          "name": "object"
+        },
+        "required": false,
+        "description": "The style of the gallery header (div)"
+      },
+      "setProps": {
+        "type": {
+          "name": "func"
+        },
+        "required": false,
+        "description": "Dash-assigned callback that should be called to report property changes\nto Dash, to make them available for callbacks."
+      },
+      "images": {
+        "type": {
+          "name": "arrayOf",
+          "value": {
+            "name": "shape",
+            "value": {
+              "src": {
+                "name": "string",
+                "required": true
+              },
+              "thumbnail": {
+                "name": "string",
+                "required": true
+              },
+              "srcset": {
+                "name": "array",
+                "required": false
+              },
+              "caption": {
+                "name": "union",
+                "value": [
+                  {
+                    "name": "string"
+                  },
+                  {
+                    "name": "element"
+                  }
+                ],
+                "required": false
+              },
+              "thumbnailWidth": {
+                "name": "number",
+                "required": true
+              },
+              "thumbnailHeight": {
+                "name": "number",
+                "required": true
+              },
+              "isSelected": {
+                "name": "bool",
+                "required": false
+              },
+              "customdata": {
+                "name": "number",
+                "required": false
+              }
+            }
+          }
+        },
+        "required": true,
+        "description": "The images array."
+      }
+    }
+  }
+}
