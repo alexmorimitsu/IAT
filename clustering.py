@@ -2,7 +2,12 @@ import sys
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
+
 from tensorflow import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Model
@@ -21,13 +26,13 @@ import time
 
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-assert len(sys.argv) >= 3
+#assert len(sys.argv) >= 3
 
-def read_model(model_name = 'inception', model_path = '../models/inception/model/', base_model_path = '../models/inception/base_model/'):
+def read_model(model_name = 'inception', model_path = 'models/inception/model/', base_model_path = 'models/inception/base_model/'):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     
-    print(current_time, 'Reading model...')
+    #print(current_time, 'Reading model...')
     if model_name == 'inception': #InceptionResNetV2, num_features=1536
         img_height = 299  
         img_width = 299
@@ -35,14 +40,14 @@ def read_model(model_name = 'inception', model_path = '../models/inception/model
         base_model = keras.models.load_model(base_model_path)
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
-    print(current_time, 'Model read\n')
+    #print(current_time, 'Model read\n')
     return (img_height, img_width, model, base_model)
 
 def get_final_model(model, base_model, layer_name = 'conv_7b_ac'):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     
-    print(current_time, 'Creating the final model...')
+    #print(current_time, 'Creating the final model...')
     layer_features = len(model.layers)-4
     
     model1 = Model(inputs=model.input, outputs=model.layers[layer_features-1].output)
@@ -60,13 +65,13 @@ def get_final_model(model, base_model, layer_name = 'conv_7b_ac'):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     
-    print(current_time, 'Final model created\n')
+    #print(current_time, 'Final model created\n')
     return final_model
 
 def prepare_images(images_path, img_width, img_height):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
-    print(current_time, 'Preparing images...')
+    #print(current_time, 'Preparing images...')
 
     test_gen = ImageDataGenerator()
     images = test_gen.flow_from_directory(
@@ -79,7 +84,7 @@ def prepare_images(images_path, img_width, img_height):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     
-    print(current_time, 'Images created\n')
+    #print(current_time, 'Images created\n')
 
     return images
 
@@ -87,7 +92,7 @@ def compute_features(layer_name, model, base_model, images):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     
-    print(current_time, 'Computing features of ', layer_name, '...')
+    #print(current_time, 'Computing features of ', layer_name, '...')
 
     final_model = get_final_model(model, base_model, layer_name)
 
@@ -100,7 +105,7 @@ def compute_features(layer_name, model, base_model, images):
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     
-    print(current_time, 'Features computed\n')
+    #print(current_time, 'Features computed\n')
 
     return x, image_names
 
@@ -126,7 +131,7 @@ def compute_tsne(features, n=2, base_tsne = []):
     #return tsne.fit_transform(features)
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
-    print(current_time, 't-SNE starting...')
+    #print(current_time, 't-SNE starting...')
 
     if base_tsne == []:
         tsne = TSNE(
@@ -145,7 +150,7 @@ def compute_tsne(features, n=2, base_tsne = []):
 
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
-    print(current_time, 't-SNE computed\n')
+    #print(current_time, 't-SNE computed\n')
 
     return tsne_results
 
@@ -153,7 +158,7 @@ def compute_tsne(features, n=2, base_tsne = []):
 #    umap = UMAP(n_components=n)
 #    return umap.fit_transform(features)
 
-def save_csv(features, features2d, image_names, csv_path, file_name = ''):
+def save_csv(features, features2d, image_names, csv_path):
     header = ['names', 'x', 'y', 'custom_data', 'manual_label', 'correct_label',\
     'x2', 'y2', 'x3', 'y3', 'x4', 'colors', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
 
@@ -184,11 +189,11 @@ def save_csv(features, features2d, image_names, csv_path, file_name = ''):
     data = np.hstack((names_col, features2d, ids, manual_labels, correct_labels, zeros_6cols, transposed_features))
     
     df = pd.DataFrame(data, columns = header)
-    df.to_csv(csv_path + file_name + '.csv', index=False)
+    df.to_csv(csv_path + '.csv', index=False)
     
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
-    print(current_time, csv_path + '.csv saved\n')
+    #print(current_time, csv_path + '.csv saved\n')
 
 def generate_dataframe(csv_path, base_path):
     layer_names_1d = ['block17_1_ac', 'block17_6_ac', 'block17_11_ac', 'block17_16_ac', 'mixed_7a', 'block8_1_ac', 'conv_7b_ac']
@@ -207,10 +212,9 @@ def generate_dataframe(csv_path, base_path):
         features_1d, _ = compute_features(layer_name, model, base_model, base_images)
         tsne_1d = compute_tsne(features_1d, 1)
         tsnes.append(tsne_1d)
-        print(tsne_1d.shape)
+        #print(tsne_1d.shape)
     
-    file_name = layer_name_2d + '.csv'
-    save_csv(tsnes, base_tsne, image_names, csv_path, file_name)
+    save_csv(tsnes, base_tsne, image_names, csv_path)
 
 def generate_transformed_dataframe(csv_path, base_path, transformed_path):
     layer_names_1d = ['block17_1_ac', 'block17_6_ac', 'block17_11_ac', 'block17_16_ac', 'mixed_7a', 'block8_1_ac', 'conv_7b_ac']
@@ -234,17 +238,22 @@ def generate_transformed_dataframe(csv_path, base_path, transformed_path):
         #np.savetxt(layer_name + '_1d.csv', data, delimiter=',')
         tsne_1d = compute_tsne(features_1d, 1)
         tsnes.append(tsne_1d)
-        print(tsne_1d.shape)
+        #print(tsne_1d.shape)
     
-    file_name = layer_name_2d + '.csv'
-    save_csv(tsnes, transformed_tsne, image_names, csv_path, file_name)
+    save_csv(tsnes, transformed_tsne, image_names, csv_path)
 
-if __name__ == '__main__':
-    csv_path = sys.argv[1]
-    base_path = sys.argv[2]
-    
-    if len(sys.argv) == 3:
-        generate_dataframe(csv_path, base_path)
+def prepare_data(csv_path, batch_path, transformed_path = ''):
+    if transformed_path == '':
+        generate_dataframe(csv_path, batch_path)
     else:
-        transformed_path = sys.argv[3]
-        generate_transformed_dataframe(csv_path, base_path, transformed_path)
+        generate_transformed_dataframe(csv_path, batch_path, transformed_path)
+
+#if __name__ == '__main__':
+#    csv_path = sys.argv[1]
+#    base_path = sys.argv[2]
+#    
+#    if len(sys.argv) == 3:
+#        generate_dataframe(csv_path, base_path)
+#    else:
+#        transformed_path = sys.argv[3]
+#        generate_transformed_dataframe(csv_path, base_path, transformed_path)
