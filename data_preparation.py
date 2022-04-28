@@ -2,7 +2,7 @@ import shutil
 from clustering import prepare_data
 from random import shuffle
 from math import ceil
-from os import listdir, mkdir
+from os import listdir, mkdir, system
 from os.path import isfile, isdir, join, exists
 
 def check_input(text, max_num):
@@ -79,7 +79,7 @@ if num_batches == 0: #creating batches if they do not exist yet
     files = [f for f in listdir(samples_path) if isfile(join(samples_path, f))]
     print(str(len(files)) + ' images found.')
     text = input('\nChoose batch size (default = 1000): ')
-    while(not check_input(text, len(files))):
+    while not check_input(text, len(files)):
         text = input('\nChoose batch size (default = 1000): ')
     if text == '':
         batch_size = 1000
@@ -113,6 +113,11 @@ while check_case(text):
     text = input('\nChoose batch number for feature extraction, "ALL" for all batches, or "SKIP" to proceed to labeling: ')
 
 text = input('\nChoose batch for labeling: ')
-while check_input(text, num_batches):
+while not check_input(text, num_batches):
     text = input('\nChoose batch for labeling: ')
 batch_id = int(text)
+
+path_to_images = join(batches_path, 'batch{:04d}'.format(batch_id), 'samples/')
+print(path_to_images)
+path_to_csv = 'dataframes/batch{:04d}'.format(batch_id) + '.csv'
+system('python main/app.py ' + path_to_images + ' ' + path_to_csv)
