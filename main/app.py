@@ -1,7 +1,7 @@
 
 import sys
 from turtle import width
-#assert len(sys.argv) == 3
+assert len(sys.argv) == 3
 
 from functions import *
 
@@ -26,10 +26,9 @@ import shutil
 import webbrowser
 from timeit import default_timer as timer
 
-#path_to_images = sys.argv[1]
-#csv_file = sys.argv[2]
-path_to_images = ''
-csv_file = ''
+path_to_images = sys.argv[1][5:]
+csv_file = sys.argv[2]
+print('CSV = ', csv_file)
 
 df = pd.read_csv(csv_file, encoding='ISO-8859-1').iloc[:,:]
 init_par_coords = False #used for recomputing the intervals of the parcoords
@@ -555,15 +554,6 @@ def gerar_scatter_plot(
 ##############################################################################################################
 
 webbrowser.open('http://127.0.0.1:8025/', new=2, autoraise=True)
-
-def run_iat(images, path_to_csv):
-    global path_to_images
-    global csv_file
-
-    path_to_images = images
-    csv_file = path_to_csv
-
-    app.run_server(debug=True, port=8025)
 
 if __name__ == '__main__':
     app.run_server(debug=True, port=8025)
