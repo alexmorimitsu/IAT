@@ -28,9 +28,8 @@ from timeit import default_timer as timer
 
 path_to_images = sys.argv[1][5:]
 csv_file = sys.argv[2]
-print('CSV = ', csv_file)
 
-df = pd.read_csv(csv_file, encoding='ISO-8859-1').iloc[:,:]
+df = pd.read_csv(csv_file, encoding='ISO-8859-1')
 init_par_coords = False #used for recomputing the intervals of the parcoords
 
 THUMBNAIL_WIDTH = 28
@@ -44,8 +43,13 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
 labels_buffer = None
 colors_buffer = None
 
-labels_list = []
+labels_list = df['manual_label'].tolist()
+colors_list = df['colors'].tolist()
+
 labels_colors = {}
+for i in range(len(labels_list)):
+    labels_colors[labels_list[i]] = colors_list[i]
+next_label_id = df['colors'].max()+1
 
 #############################################################################
 
@@ -325,13 +329,10 @@ def mudanca_custom_data(
     
     global labels_list
     global labels_colors
+    global next_label_id
     global labels_buffer # for the undo
     global colors_buffer # for the undo
     global init_par_coords
-
-    print()
-    print('----- mudanca custom data -----')
-    t1 = timer()
 
     init_par_coords = False
     set_chart_flag = 0
@@ -342,9 +343,6 @@ def mudanca_custom_data(
     df_store_updated = df_updated.to_json()
     unchecked_points = []
 
-    t2 = timer()
-    print('Initialization:', t2 - t1) 
-
     if flag_callback == 'g_scatter_plot':
         #print('app.py entrou na callback do g_scatter_plot')
         set_chart_flag = 0
@@ -354,9 +352,7 @@ def mudanca_custom_data(
         else:
             #selectedpoints = json.dumps(list(df_updated['custom_data']))
             selectedpoints = json.dumps([])
-        t3 = timer()
         init_par_coords = True
-        print('  Scatter plot:', t3 - t2) 
 
     elif flag_callback == 'g_coordenadas_paralelas':
         #print('app.py entrou na callback g_coordenadas_paralelas')
@@ -383,9 +379,7 @@ def mudanca_custom_data(
             selectedpoints = json.dumps(selectedpoints)
         else:
             selectedpoints = json.dumps(list(df_updated['custom_data']))
-        t3 = timer()
-        print('  Parccords:', t3 - t2) 
-
+  
     elif flag_callback == 'button_aplicar_novo_label':
         s_selected_custom_points = ast.literal_eval(s_selected_custom_points)
         selected_and_checked = []
@@ -401,32 +395,24 @@ def mudanca_custom_data(
         df_updated['manual_label'][df_updated['custom_data'].isin(selected_and_checked)]= new_label
         if new_label not in labels_list:
             labels_list.append(new_label)
-            labels_colors[new_label] = len(labels_list)
+            labels_colors[new_label] = next_label_id
+            next_label_id += 1
         df_updated['colors'][df_updated['custom_data'].isin(selected_and_checked)] = labels_colors[new_label]
         df_store_updated = df_updated.to_json()
         selectedpoints = json.dumps(selected_not_checked)
-        t3 = timer()
-        print('  Novo label:', t3 - t2) 
 
     elif flag_callback == 'button_undo':
         df_updated['manual_label'] = labels_buffer
         df_updated['colors'] = colors_buffer
         df_store_updated = df_updated.to_json()
         selectedpoints = json.dumps([])
-        t3 = timer()
-        print('  Undo:', t3 - t2) 
 
     else:
         set_chart_flag = 0
         #selectedpoints = json.dumps(list(df_updated['custom_data']))
         selectedpoints = json.dumps([])
-        t3 = timer()
-        print('  Else:', t3 - t2) 
 
     s_unchecked_points = json.dumps(unchecked_points)
-    t4 = timer()
-    print('Total:', t4 - t1) 
-    print()    
     return [selectedpoints, df_store_updated, set_chart_flag, s_unchecked_points]
 
 
@@ -466,10 +452,7 @@ def gerar_scatter_plot(
     _df = pd.read_json(s_store_df)
 
     if flag_callback == 'selected_custom_points':
-        print()
-        print('----- gerar scatter plot -----')
-        t1 = timer()
-
+   
         unchecked_points = json.loads(i_unchecked_points)
 
         #print('app.py entrou na callback selected_custom_points')
@@ -496,9 +479,6 @@ def gerar_scatter_plot(
         #_image_teste_list_caption = updated_df['manual_label'][updated_df['custom_data'].isin(selected_points)]
         #_image_teste_list_custom_data = updated_df['custom_data'][updated_df['custom_data'].isin(selected_points)]
 
-        t2 = timer()
-        print('Time to create lists (new):', t2 - t1) 
-
         fig2 = create_list_dics(
             _list_src=list(path_to_images + _image_teste_list_names),
             _list_thumbnail=list(path_to_images + _image_teste_list_names),
@@ -510,17 +490,9 @@ def gerar_scatter_plot(
             _list_thumbnailCaption=_image_teste_list_caption,
             _list_tags='')
 
-        t3 = timer()
-        print('Time to create fig2:', t3 - t2) 
-
         for point in fig2:
             if point['custom_data'] in unchecked_points:
                 point['isSelected'] = False
-
-        t4 = timer()
-        print('Time to unckeck points:', t4 - t3) 
-
-
 
         if s_chart_flag_data == 1:
             #print('app.py chamando fpc via if')
@@ -541,11 +513,6 @@ def gerar_scatter_plot(
                         _fig = None
                     )
 
-        t5 = timer()
-        print('Time for parcoords:', t5 - t4) 
-        print('Total:', t5-t1)
-        print()
-
         return [fig, fig2, fig3]
 
     else:
@@ -553,8 +520,8 @@ def gerar_scatter_plot(
 
 ##############################################################################################################
 
-webbrowser.open('http://127.0.0.1:8025/', new=2, autoraise=True)
+webbrowser.open('http://127.0.0.1:8026/', new=2, autoraise=True)
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8025)
+    app.run_server(debug=True, port=8026)
 

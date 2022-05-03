@@ -121,8 +121,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
     _list_range = []
     _list_values = []
 
-    values, counts = np.unique(_df['colors'], return_counts=True)
-    num_colors = len(values)
+    num_colors = _df['colors'].max()
 
     
     # range com max e min para cada dimensao de tsne
