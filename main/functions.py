@@ -65,7 +65,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
             (_df['custom_data'].isin(_selected_custom_data))
         ].index.values
         _custom_points = _df['custom_data'][(_df[column_name] == idx)]
-        _label = val['manual_label'].iloc[0]
+        _label = str(val['manual_label'].iloc[0])
 
         _temp = []
         for i in range(len(_selectedpoints)):
