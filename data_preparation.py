@@ -14,7 +14,7 @@ def check_input(text, max_num):
         print('Batch size should be an integer between 1 and', max_num)
         
 
-def check_case(text):
+def check_case(text, dataframes_path = None):
     if text == 'ALL':
         for i in range(num_batches):
             prepare_data('dataframes/batch{:04d}'.format(i+1), join(batches_path, 'batch{:04d}'.format(i+1)))
@@ -27,7 +27,7 @@ def check_case(text):
             text = input('\nChoose batch number for feature extraction: ')
         batch_id = int(text)
 
-        prepare_data('dataframes/batch{:04d}'.format(batch_id), join(batches_path, 'batch{:04d}'.format(batch_id)))
+        prepare_data(dataframes_path + 'batch{:04d}'.format(batch_id), join(batches_path, 'batch{:04d}'.format(batch_id)))
         
         return True
 
@@ -42,8 +42,7 @@ def show_status(batches_path, dataframes_path):
             print(folder, 'needs features extraction.')
 
 
-projects_path = 'main/assets/images/'
-dataframes_path = 'dataframes/'
+projects_path = 'main/assets/'
 
 print('\nList of ongoing projects:')
 list_of_projects = listdir(projects_path)
@@ -61,12 +60,15 @@ if text == 'NEW':
         print(text, 'is already an ongoing project.')
         text = input('\nChoose a name for the new project: ')
     mkdir(join(projects_path, text))
-    mkdir(join(projects_path, text, 'batches'))
+    mkdir(join(projects_path, text, 'samples'))
+    mkdir(join(projects_path, text, 'dataframes'))
+    mkdir(join(projects_path, text, 'images'))
 
 project_name = text
 
-samples_path = 'main/assets/images/' + project_name + '/samples/'
-batches_path = 'main/assets/images/' + project_name + '/batches/'
+dataframes_path = 'main/assets/' + project_name + '/dataframes/'
+samples_path = 'main/assets/' + project_name + '/samples/' + project_name
+batches_path = 'main/assets/' + project_name + '/images/'
 
 print('\nChecking dataset', project_name, '...\n')
 if project_name not in list_of_projects:
@@ -106,9 +108,10 @@ if num_batches == 0: #creating batches if they do not exist yet
 
     print('\n' + str(num_batches) + ' batches created:')
 
+
 show_status(batches_path, dataframes_path)
 text = input('\nChoose batch number for feature extraction, "ALL" for all batches, or "SKIP" to proceed to labeling: ')
-while check_case(text):
+while check_case(text, dataframes_path):
     show_status(batches_path, dataframes_path)
     text = input('\nChoose batch number for feature extraction, "ALL" for all batches, or "SKIP" to proceed to labeling: ')
 
@@ -119,5 +122,5 @@ batch_id = int(text)
 
 path_to_images = join(batches_path, 'batch{:04d}'.format(batch_id), 'samples/')
 print(path_to_images)
-path_to_csv = 'dataframes/batch{:04d}'.format(batch_id) + '.csv'
+path_to_csv = dataframes_path + 'batch{:04d}'.format(batch_id) + '.csv'
 system('python main/app.py ' + path_to_images + ' ' + path_to_csv)

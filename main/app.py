@@ -1,7 +1,6 @@
 
 import sys
-from turtle import width
-assert len(sys.argv) == 3
+assert len(sys.argv) >= 3
 
 from functions import *
 
@@ -28,6 +27,9 @@ from timeit import default_timer as timer
 
 path_to_images = sys.argv[1][5:]
 csv_file = sys.argv[2]
+port = 8025
+if len(sys.argv) > 3:
+    port = int(sys.argv[3])
 
 df = pd.read_csv(csv_file, encoding='ISO-8859-1')
 init_par_coords = False #used for recomputing the intervals of the parcoords
@@ -50,6 +52,8 @@ labels_colors = {}
 for i in range(len(labels_list)):
     labels_colors[labels_list[i]] = colors_list[i]
 next_label_id = df['colors'].max()+1
+
+fig_scatter = None
 
 #############################################################################
 
@@ -343,6 +347,8 @@ def mudanca_custom_data(
     df_store_updated = df_updated.to_json()
     unchecked_points = []
 
+    print('Mudanca_custom_data', flag_callback)
+
     if flag_callback == 'g_scatter_plot':
         #print('app.py entrou na callback do g_scatter_plot')
         set_chart_flag = 0
@@ -446,10 +452,14 @@ def gerar_scatter_plot(
 
     #print('app.py entrou na gerar_scatter_plot')
 
+    global fig_scatter
+
     ctx = dash.callback_context
     flag_callback = ctx.triggered[0]['prop_id'].split('.')[0]
 
     _df = pd.read_json(s_store_df)
+
+    print('Gerar scatter plot', flag_callback)
 
     if flag_callback == 'selected_custom_points':
    
@@ -460,7 +470,7 @@ def gerar_scatter_plot(
         if init_par_coords:
             init_for_update_pc(selected_points)
 
-        fig = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points)
+        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points)
 
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         ordered_df = filtered_df.sort_values(by='D6') # show similar images close to each other
@@ -513,15 +523,15 @@ def gerar_scatter_plot(
                         _fig = None
                     )
 
-        return [fig, fig2, fig3]
+        return [fig_scatter, fig2, fig3]
 
     else:
         return [s_g_scatter_plot_figure, s_g_image_selector_images, s_g_coordenadas_paralelas_figure]
 
 ##############################################################################################################
 
-webbrowser.open('http://127.0.0.1:8026/', new=2, autoraise=True)
+webbrowser.open('http://127.0.0.1:' + str(port) + '/', new=2, autoraise=True)
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8026)
+    app.run_server(debug=True, port=port)
 

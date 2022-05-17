@@ -101,7 +101,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
     )
 
     figure_0 = go.Figure(data=l_data, layout=layout)
-    #figure_0.update_layout(modebar_orientation='h', legend=dict(yanchor='top', y=0.9))
+    
     return figure_0
 
 
@@ -121,7 +121,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
     _list_range = []
     _list_values = []
 
-    num_colors = _df['colors'].max()
+    num_colors = int(_df['colors'].max())
 
     
     # range com max e min para cada dimensao de tsne
