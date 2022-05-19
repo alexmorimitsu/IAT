@@ -20,13 +20,14 @@ import json
 import ast
 
 from os import mkdir
-from os.path import exists, join
+from os.path import exists, join, dirname
 import shutil
 import webbrowser
 from timeit import default_timer as timer
 
 path_to_images = sys.argv[1][5:]
 csv_file = sys.argv[2]
+csv_folder = dirname(csv_file)
 port = 8025
 if len(sys.argv) > 3:
     port = int(sys.argv[3])
@@ -256,7 +257,7 @@ def save_dataset(
         for index, row in df_updated.iterrows():
             name = row['names']
             folder = row['manual_label']
-            shutil.copy2(path_to_images + name, join(s_input_finish_work_value, folder))
+            shutil.copy2('main/' + path_to_images + name, join(s_input_finish_work_value, folder))
 
         print('\nDataset recorded.\n')
     
@@ -281,9 +282,11 @@ def save_csv(
     s_input_save_csv_value
     ):
 
+    global csv_folder
+
     if i_button_save_csv_nclicks > 0:
         df_updated = pd.read_json(s_store_df)
-        filename = str(s_input_save_csv_value)
+        filename = join(csv_folder, str(s_input_save_csv_value))
         df_updated.to_csv(filename, index=False)
         print('\ncsv recorded.\n')
     

@@ -4,6 +4,8 @@ from random import shuffle
 from math import ceil
 from os import listdir, mkdir, system
 from os.path import isfile, isdir, join, exists
+from knn_labeling import run_knn
+import pandas as pd
 
 def check_input(text, max_num):
     try:    
@@ -32,15 +34,32 @@ def check_case(text, dataframes_path = None):
         return True
 
 def show_status(batches_path, dataframes_path):
+    batch1_is_labeled = False
+
     batches_list = listdir(batches_path)
     batches_list.sort()
     print()
-    for folder in batches_list:
-        if isfile(dataframes_path + folder + '.csv'):
-            print(folder, 'features are OK.')
+    for batch in batches_list:
+        batch_file = dataframes_path + batch + '.csv'
+        if isfile(batch_file):
+            df = pd.read_csv(batch_file)
+            not_labeled = 0
+            value_counts = df['colors'].value_counts()
+            if 0 in value_counts:
+                not_labeled = value_counts[0]
+            num_rows = len(df)
+            num_labeled = num_rows-not_labeled
+            
+            if not_labeled == 0:
+                print(batch, '-> features are already extracted. All ' + str(num_rows) + ' images are labeled.')
+                if batch == 'batch0001':
+                    batch1_is_labeled = True
+            else:
+                print(batch, '-> features are already extracted. ' + str(num_labeled) + ' out of ' + str(num_rows) + ' images are labeled.')
+               
         else:
-            print(folder, 'needs features extraction.')
-
+            print(batch, '-> needs features extraction.')
+    return batch1_is_labeled
 
 projects_path = 'main/assets/'
 
@@ -109,10 +128,10 @@ if num_batches == 0: #creating batches if they do not exist yet
     print('\n' + str(num_batches) + ' batches created:')
 
 
-show_status(batches_path, dataframes_path)
+batch1_is_labeled = show_status(batches_path, dataframes_path)
 text = input('\nChoose batch number for feature extraction, "ALL" for all batches, or "SKIP" to proceed to labeling: ')
 while check_case(text, dataframes_path):
-    show_status(batches_path, dataframes_path)
+    batch1_is_labeled = show_status(batches_path, dataframes_path)
     text = input('\nChoose batch number for feature extraction, "ALL" for all batches, or "SKIP" to proceed to labeling: ')
 
 text = input('\nChoose batch for labeling: ')
@@ -121,6 +140,14 @@ while not check_input(text, num_batches):
 batch_id = int(text)
 
 path_to_images = join(batches_path, 'batch{:04d}'.format(batch_id), 'samples/')
-print(path_to_images)
 path_to_csv = dataframes_path + 'batch{:04d}'.format(batch_id) + '.csv'
+
+if batch_id != 1 and batch1_is_labeled:
+    text = input("\nGenerate labels from batch 1? ('YES', 'NO'): ").lower()
+    while(text != 'yes' and text != 'no'):
+        text = input("\nGenerate labels from batch 1? ('YES', 'NO'): ").lower()
+    if text == 'yes':
+        path_to_csv = run_knn(join(dataframes_path, 'batch0001.csv'), path_to_csv)
+        print('\nUsing KNN to infer the labels for', path_to_csv)
+
 system('python main/app.py ' + path_to_images + ' ' + path_to_csv)
