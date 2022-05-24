@@ -1,0 +1,51 @@
+Instale o python anaconda
+Crie um ambiente conda
+Instale o pip
+Instale o tensorflow (2.8.0 é a versão testada) usando o pip:
+	pip install tensorflow==2.8.0
+Instale o opentsne:
+	conda install opentsne
+Instale o pandas:
+	conda install pandas
+	conda install pandas-datareader
+Instale o pillow:
+	conda install pillow
+Instale o dash:
+	conda install dash
+	conda install -c conda-forge dash-bootstrap-components
+	conda install dash-html-components
+
+Baixe o código de https://github.com/alexmorimitsu/IAT.git
+Baixe o modelo de https://drive.google.com/file/d/15JfL1Thy96PA5RvN4n_RtG-aiIYVrRWd/view?usp=sharing
+	1 Descompacte o arquivo
+	2 Mova os arquivos para a pasta models
+Baixe o projeto de https://drive.google.com/file/d/1Bsbiz08PhX4idG8HA-3FNVD4lmUJ0zYD/view?usp=sharing
+ 	1 Descompacte os arquivos
+ 	2 Mova os arquivos para a pasta main/assets
+
+
+Rodando o programa:
+	Na pasta IAT, rodar o comando:
+		python data_preparation.py e seguir as instruções do programa
+	
+Criando um projeto pelo programa:
+	1 Mover a pasta com todas as imagens para a pasta IAT
+	2 Quando for criar o projeto pelo programa, dar como nome do projeto o mesmo nome da pasta com as imagens
+		
+Deletando um projeto:
+	Apague a pasta correspondente dentro do diretório main/assets/
+
+Rodando o programa direto do terminal:
+- Na pasta IAT, rodar o comando, 
+	python main/app.py CAMINHO_PARA_AS_IMAGENS CAMINHO_PARA_O_CSV
+	
+	Por exemplo, para rodar o batch de nome batchID do projeto com nome PROJ, rodar: 
+		python main/app.py main/assets/PROJ/images/batchID/samples/ main/assets/PROJ/dataframes/batchID.csv		
+	- NOTA: Imagens fora da pasta main/assets não são acessíveis pelo programa
+
+NOTAS / BUGS:
+- quando o programa é executado, duas abas do navegador são abertas.
+	- Fechar uma das abas quando for usar.
+- o programa continua rodando mesmo quando o navegador é fechado.
+	- Aperte Crtl + C no terminal para fechar o programa.
+- interagir com o programa enquanto "Updating..." pode dar resultados indesejados.
