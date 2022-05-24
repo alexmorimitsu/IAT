@@ -20,7 +20,7 @@ import json
 import ast
 
 from os import mkdir
-from os.path import exists, join, dirname
+from os.path import exists, join, dirname, basename
 import shutil
 import webbrowser
 from timeit import default_timer as timer
@@ -28,6 +28,7 @@ from timeit import default_timer as timer
 path_to_images = sys.argv[1][5:]
 csv_file = sys.argv[2]
 csv_folder = dirname(csv_file)
+csv_basename = basename(csv_file)
 port = 8025
 if len(sys.argv) > 3:
     port = int(sys.argv[3])
@@ -83,7 +84,7 @@ button_group_2 = dbc.ButtonGroup(
 
 button_group_3 = dbc.ButtonGroup(
     [
-        dbc.Input(value="checkpoint.csv", id='input_save_csv', type="text", style={'width': '50%', 'background':'Floralwhite'}),
+        dbc.Input(value=csv_basename, id='input_save_csv', type="text", style={'width': '50%', 'background':'Floralwhite'}),
         dbc.Button("Save CSV",n_clicks=0, id='button_save_csv', style={'background':'chocolate', 'width':'50%'}),
     ],
     #vertical=True,
@@ -350,8 +351,6 @@ def mudanca_custom_data(
     df_store_updated = df_updated.to_json()
     unchecked_points = []
 
-    print('Mudanca_custom_data', flag_callback)
-
     if flag_callback == 'g_scatter_plot':
         #print('app.py entrou na callback do g_scatter_plot')
         set_chart_flag = 0
@@ -461,8 +460,6 @@ def gerar_scatter_plot(
     flag_callback = ctx.triggered[0]['prop_id'].split('.')[0]
 
     _df = pd.read_json(s_store_df)
-
-    print('Gerar scatter plot', flag_callback)
 
     if flag_callback == 'selected_custom_points':
    

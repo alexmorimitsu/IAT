@@ -13,12 +13,12 @@ def get_color(i):
     b = (53*i+237)%256
     return 'rgb(' + str(r) + ', ' + str(g) + ', ' + str(b) + ')'
 
-def get_colorscale(num_colors):
+def get_colorscale(max_color):
     colorscale = []
-    inc = 0
-    if num_colors > 0:
-        inc = 1/num_colors
-    for i in range(num_colors+1):
+    if max_color < 1:
+        max_color = 1
+    inc = 1/max_color
+    for i in range(max_color+1):
         colorscale.append([i*inc, get_color(i)])
     return colorscale
 
@@ -98,10 +98,10 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
         dragmode='select',
         paper_bgcolor='aliceblue',
         plot_bgcolor=background_color,
+        showlegend = True
     )
 
     figure_0 = go.Figure(data=l_data, layout=layout)
-    
     return figure_0
 
 
@@ -121,7 +121,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
     _list_range = []
     _list_values = []
 
-    num_colors = int(_df['colors'].max())
+    max_color = int(_df['colors'].max())
 
     
     # range com max e min para cada dimensao de tsne
@@ -178,7 +178,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
         #dimensions_dict[i]['label'] = ''
 
     #print(colors)
-    custom_colorscale = get_colorscale(num_colors)
+    custom_colorscale = get_colorscale(max_color)
     #print('count: ', values, counts)
 
     layout = go.Layout(
@@ -186,12 +186,15 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
         paper_bgcolor = background_color,
     )
 
+    if max_color == 0: # fixing color when no labels are given
+        max_color = 1 
+
     coordenadas_paralelas = go.Parcoords(
             line = dict(color = _filtered_df['colors'],
                 colorscale = custom_colorscale,
-                #showscale = True,
+                showscale = False,
                 cmin=0,
-                cmax=num_colors
+                cmax=max_color
             ),
             dimensions = dimensions_dict,
             tickfont = {'color': 'rgba(39,43,48,0)'},
