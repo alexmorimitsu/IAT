@@ -59,7 +59,7 @@ fig_scatter = None
 
 #############################################################################
 
-header = html.H1("Image Annotation Tool", style={'color': 'CornflowerBlue'})
+header = html.H1("Image Labeling Tool", style={'color': 'CornflowerBlue'})
 
 #button_group_1 = dbc.ButtonGroup(
 #    [
