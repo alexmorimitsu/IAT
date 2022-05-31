@@ -111,6 +111,15 @@ button_group_5 = dbc.ButtonGroup(
     size="lg",
 )
 
+button_group_6 = dbc.ButtonGroup(
+    [
+        dbc.Button("Invert marks", n_clicks=0, id='button_invert_marks', style={'background':'chocolate', 'width':'100%'}),
+    ],
+    #vertical=True,
+    className='my-btn-group',
+    size="lg",
+)
+
 IMAGES = create_list_dics(
     _list_src=[],
     _list_thumbnail=[],
@@ -181,10 +190,16 @@ app.layout = html.Div([
                     dbc.Row(
                         html.Div(imageselector.ImageSelector(id='g_image_selector', images=IMAGES,
                             galleryHeaderStyle = {'position': 'sticky', 'top': 0, 'height': '0px', 'background': "#000000", 'zIndex': -1},),
-                            id='XXXXXXXXXX', style=dict(height='72vh',overflow='scroll', backgroundColor=background_color)
+                            id='XXXXXXXXXX', style=dict(height='62vh',overflow='scroll', backgroundColor=background_color)
                             )
                         ),
-                    ], width={"size": 5})
+
+                    dbc.Row([dbc.Col(html.Hr()),],),
+                    dbc.Row([
+                        dbc.Col(button_group_6, width={"size": 4})
+                    ]),
+                    ], width={"size": 5}),
+                    
             ]),
         style={'max-width': '100%'},
         # className='mt-2'
@@ -307,6 +322,7 @@ def save_csv(
         #Input('button_galeria_filtrar', 'n_clicks'),
         #Input('button_galeria_excluir', 'n_clicks'),
         Input('button_aplicar_novo_label', 'n_clicks'),
+        Input('button_invert_marks', 'n_clicks'),
         Input('button_undo', 'n_clicks'),
     ],
     [
@@ -324,6 +340,7 @@ def mudanca_custom_data(
     #i_button_galeria_filtrar_nclicks,
     #i_button_galeria_excluir_nclicks,
     i_button_aplicar_novo_label_nclicks,
+    i_invert_marks_nclicks,
     i_button_undo_nclicks,
     s_selected_custom_points,
     s_unchecked_points,
@@ -415,6 +432,15 @@ def mudanca_custom_data(
         df_store_updated = df_updated.to_json()
         selectedpoints = json.dumps([])
 
+    elif flag_callback == 'button_invert_marks':
+        selected_and_checked = []
+        selected_not_checked = []
+
+        for point in s_button_galeria_filtrar_images:
+            if point['isSelected'] == True:
+                unchecked_points.append(point['custom_data'])
+        df_store_updated = df_updated.to_json()
+        selectedpoints = s_selected_custom_points
     else:
         set_chart_flag = 0
         #selectedpoints = json.dumps(list(df_updated['custom_data']))

@@ -56,21 +56,33 @@ def create_list_dics(
 def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
 
     l_data = []
-    column_name = 'colors'
-    groups = _df.groupby(column_name)
-    
-    for idx, val in groups:
-        _selectedpoints = _df[column_name][
-            (_df[column_name] == idx) &
-            (_df['custom_data'].isin(_selected_custom_data))
-        ].index.values
-        _custom_points = _df['custom_data'][(_df[column_name] == idx)]
-        _label = str(val['manual_label'].iloc[0])
+    column_name = 'manual_label'
+    label_names = _df[column_name].unique().tolist()
 
-        _temp = []
-        for i in range(len(_selectedpoints)):
-            _temp.append(val.index.get_loc(_selectedpoints[i]))
-        _selectedpoints = _temp
+    freq_colors = []
+    for l in label_names:
+        freq_colors.append(len(_df[_df[column_name] == l]))
+
+    sorted_names_freq = sorted(zip(freq_colors, label_names), reverse=True)
+    sorted_names = [x for _,x in sorted_names_freq]    
+
+    for name in sorted_names:
+        #_selectedpoints = _df[column_name][
+        #    (_df[column_name] == idx) &
+        #    (_df['custom_data'].isin(_selected_custom_data))
+        #].index.values
+        val = _df[_df[column_name] == name].reset_index()
+        idx = int(val['colors'].iloc[0])
+
+        _selectedpoints = val.index[val['custom_data'].isin(_selected_custom_data)].tolist()
+
+        _custom_points = _df['custom_data'][(_df[column_name] == name)]
+        _label = name + ' (' + str(val.shape[0]) + ')'
+
+#        _temp = []
+#        for i in range(len(_selectedpoints)):
+#            _temp.append(val.index.get_loc(_selectedpoints[i]))
+#        _selectedpoints = _temp
 
         scatter = go.Scattergl(
             name=_label,
