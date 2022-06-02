@@ -559,5 +559,5 @@ def gerar_scatter_plot(
 webbrowser.open('http://127.0.0.1:' + str(port) + '/', new=2, autoraise=True)
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=port)
+    app.run_server(debug=False, port=port)
 
