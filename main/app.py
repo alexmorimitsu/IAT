@@ -120,6 +120,15 @@ button_group_6 = dbc.ButtonGroup(
     size="lg",
 )
 
+button_group_7 = dbc.ButtonGroup(
+    [
+        dcc.Checklist([' Save CSV after relabeling'], id = 'check_save_csv'),
+    ],
+    #vertical=True,
+    className='my-btn-group',
+    size="lg",
+)
+
 IMAGES = create_list_dics(
     _list_src=[],
     _list_thumbnail=[],
@@ -184,6 +193,9 @@ app.layout = html.Div([
                         #dbc.Col(button_group_2, width={"size": 6})
                         dbc.Col(button_group_2, width={"size": 12})
                         ]),
+                    dbc.Row([
+                        dbc.Col(button_group_7, width={"size": 12})
+                        ]),
 
                     dbc.Row([dbc.Col(html.Hr()),],),
 
@@ -239,6 +251,14 @@ app.layout = html.Div([
     html.Div(id='output')
 ]) #End html.DIV
 
+############3
+
+def save_csv(df_updated, csv_name):
+    global csv_folder
+    filename = join(csv_folder, csv_name)
+    df_updated.to_csv(filename, index=False)
+    print('\ncsv recorded.\n')
+
 ##############################################################################################################
 
 @app.callback(
@@ -292,19 +312,16 @@ def save_dataset(
         State("input_save_csv", "value"),
     ]
     )
-def save_csv(
+def button_save_csv(
     i_button_save_csv_nclicks,
     s_store_df,
     s_input_save_csv_value
     ):
 
-    global csv_folder
-
     if i_button_save_csv_nclicks > 0:
         df_updated = pd.read_json(s_store_df)
-        filename = join(csv_folder, str(s_input_save_csv_value))
-        df_updated.to_csv(filename, index=False)
-        print('\ncsv recorded.\n')
+
+        save_csv(df_updated, s_input_save_csv_value, str(s_input_save_csv_value))
     
     return [0]
 
@@ -332,6 +349,8 @@ def save_csv(
         State('g_coordenadas_paralelas', 'figure'),
         State('g_image_selector', 'images'),
         State("input_aplicar_novo_label", "value"),
+        State("check_save_csv", "value"),
+        State("input_save_csv", "value"),
     ]
     )
 def mudanca_custom_data(
@@ -347,7 +366,9 @@ def mudanca_custom_data(
     s_store_df,
     s_g_coordenadas_paralelas_figure,
     s_button_galeria_filtrar_images,
-    s_input_aplicar_novo_label_value
+    s_input_aplicar_novo_label_value,
+    s_check_save_csv_value,
+    s_input_save_csv_value
     ):
 
     #print('app.py entrou no mudanca_custom_data')
@@ -423,6 +444,10 @@ def mudanca_custom_data(
             labels_colors[new_label] = next_label_id
             next_label_id += 1
         df_updated['colors'][df_updated['custom_data'].isin(selected_and_checked)] = labels_colors[new_label]
+        
+        if s_check_save_csv_value == [' Save CSV after relabeling']:
+            save_csv(df_updated, str(s_input_save_csv_value))
+        
         df_store_updated = df_updated.to_json()
         selectedpoints = json.dumps(selected_not_checked)
 
