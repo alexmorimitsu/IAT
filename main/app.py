@@ -187,16 +187,14 @@ app.layout = html.Div([
                 dbc.Col(dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "80vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}), width={"size": 7}),
 
                 dbc.Col([
-
+                    dbc.Row([
+                        dbc.Col(button_group_7, width={"size": 12})
+                        ]),
                     dbc.Row([
                         #dbc.Col(button_group_1, width={"size": 6}),
                         #dbc.Col(button_group_2, width={"size": 6})
                         dbc.Col(button_group_2, width={"size": 12})
                         ]),
-                    dbc.Row([
-                        dbc.Col(button_group_7, width={"size": 12})
-                        ]),
-
                     dbc.Row([dbc.Col(html.Hr()),],),
 
                     dbc.Row(
