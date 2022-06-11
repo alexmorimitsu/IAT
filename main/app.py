@@ -321,7 +321,7 @@ def button_save_csv(
     if i_button_save_csv_nclicks > 0:
         df_updated = pd.read_json(s_store_df)
 
-        save_csv(df_updated, s_input_save_csv_value, str(s_input_save_csv_value))
+        save_csv(df_updated, str(s_input_save_csv_value))
     
     return [0]
 
