@@ -53,7 +53,7 @@ def create_list_dics(
     return _df_dict
 
 
-def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
+def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None):
 
     l_data = []
     column_name = 'manual_label'
@@ -96,7 +96,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
             marker=dict(color = get_color(idx), size=12, symbol="circle"),
         )
         l_data.append(scatter)
-
+    
     layout = go.Layout(
         modebar_orientation='h',
         legend=dict(yanchor='top', y=0.9),
@@ -113,8 +113,17 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data):
         showlegend = True
     )
 
-    figure_0 = go.Figure(data=l_data, layout=layout)
-    return figure_0
+    if prev_fig is not None:
+        prev_fig_full = prev_fig.full_figure_for_development()
+        prev_layout = prev_fig_full.layout
+
+        layout['xaxis'] = prev_layout['xaxis']
+        layout['yaxis'] = prev_layout['yaxis']
+        layout['dragmode'] = prev_layout['dragmode']
+    
+    fig = go.Figure(data=l_data, layout=layout)
+
+    return fig
 
 
 def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom_data, _fig=None):
@@ -212,6 +221,8 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
             tickfont = {'color': 'rgba(39,43,48,0)'},
             customdata = _df['custom_data'],
             )
+        
+
     
     #print('coordenadas_paralelas[dimensions]')
     #print(coordenadas_paralelas['dimensions'])
@@ -220,6 +231,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
     l_data.append(coordenadas_paralelas)
     
     figure = go.Figure(data=l_data, layout=layout)
+
     return figure
 
 def init_for_update_pc(selected_points):

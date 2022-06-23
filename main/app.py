@@ -10,6 +10,7 @@ from dash import html
 from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
 import plotly.express as px
+import plotly.graph_objs as go
 
 import pandas as pd
 pd.options.mode.chained_assignment = None # default='warn'
@@ -25,20 +26,54 @@ import shutil
 import webbrowser
 from timeit import default_timer as timer
 
-path_to_images = sys.argv[1][5:]
-csv_file = sys.argv[2]
-csv_folder = dirname(csv_file)
-csv_basename = basename(csv_file)
-port = 8025
-if len(sys.argv) > 3:
-    port = int(sys.argv[3])
+def init(argv):
+    """
+        Read the arguments from the terminal
 
-df = pd.read_csv(csv_file, encoding='ISO-8859-1')
+        argv (list):
+            [1] (string): path to the images
+            [2] (string): input CSV
+            [3] (string): User ID (default 1)
+            [4] (string): Port to run the app (default 8025)
+    """
+    path_to_images = argv[1][5:]
+    csv_file = argv[2]
+    csv_folder = dirname(csv_file)
+    csv_basename = basename(csv_file)
+    user_id = 0
+    if len(argv) > 3:
+        port = int(argv[3])
+    port = 8025
+    if len(argv) > 4:
+        port = int(argv[4])
+
+    return path_to_images, csv_file, csv_folder, csv_basename, user_id, port
+
+def read_input_csv(csv_file):
+    """
+        Read the input CSV and returns the respective DataFrame
+
+        csv_file (string): path to the input CSV
+    """
+    return pd.read_csv(csv_file, encoding='ISO-8859-1')
+
+def init_appearance():
+    """
+        Sets parameters of the interface
+    """
+
+    background_color = 'rgba(255, 250, 240, 100)'
+    return background_color
+
+path_to_images, csv_file, csv_folder, csv_basename, user_id, port = init(sys.argv)
+df = read_input_csv(csv_file)
+
+
 init_par_coords = False #used for recomputing the intervals of the parcoords
 
 THUMBNAIL_WIDTH = 28
 THUMBNAIL_HEIGHT = 28
-background_color = 'rgba(255, 250, 240, 100)'
+background_color = init_appearance()
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
                 meta_tags=[{'name': 'viewport',
@@ -54,8 +89,6 @@ labels_colors = {}
 for i in range(len(labels_list)):
     labels_colors[labels_list[i]] = colors_list[i]
 next_label_id = df['colors'].max()+1
-
-fig_scatter = None
 
 #############################################################################
 
@@ -148,6 +181,9 @@ IMAGES = create_list_dics(
 
 #fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=list(df['custom_data']))
 fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[])
+fig_full = fig.full_figure_for_development()
+print('f1', fig_full.layout)
+
 
 #_columns_paralelas_coordenadas = ['Layer_A', 'Layer_B', 'Layer_C', 'Layer_D', 'Layer_E', 'Layer_F', 'Layer_G']
 _columns_paralelas_coordenadas = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
@@ -503,7 +539,9 @@ def gerar_scatter_plot(
 
     #print('app.py entrou na gerar_scatter_plot')
 
-    global fig_scatter
+    prev_fig = go.Figure(s_g_scatter_plot_figure)
+
+    print('Prev fig', type(prev_fig))
 
     ctx = dash.callback_context
     flag_callback = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -519,7 +557,7 @@ def gerar_scatter_plot(
         if init_par_coords:
             init_for_update_pc(selected_points)
 
-        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points)
+        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig)
 
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         ordered_df = filtered_df.sort_values(by='D6') # show similar images close to each other
@@ -547,7 +585,7 @@ def gerar_scatter_plot(
             _list_isSelected= [True] * _image_teste_list_correct_label.shape[0],
             _list_custom_data=list(_image_teste_list_custom_data),
             _list_thumbnailCaption=_image_teste_list_caption,
-            _list_tags='')
+            _list_tags=[['A', 'B']] * _image_teste_list_correct_label.shape[0])
 
         for point in fig2:
             if point['custom_data'] in unchecked_points:
@@ -579,7 +617,10 @@ def gerar_scatter_plot(
 
 ##############################################################################################################
 
-webbrowser.open('http://127.0.0.1:' + str(port) + '/', new=2, autoraise=True)
+opened = False
+if not opened:
+    webbrowser.open('http://127.0.0.1:' + str(port) + '/', new=2, autoraise=True)
+    opened = True
 
 if __name__ == '__main__':
     app.run_server(debug=False, port=port)
