@@ -3,6 +3,10 @@ from webbrowser import BackgroundBrowser
 import pandas as pd
 import plotly.graph_objs as go
 import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+from PIL import Image
 
 background_color = 'rgba(255, 250, 240, 100)'
 aux_list = [] * 7 #new
@@ -53,8 +57,10 @@ def create_list_dics(
     return _df_dict
 
 
-def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None):
+def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None, order_by = 'A-Z, a-z', 
+                          background_img = 'main/assets/temp.png'):
 
+    print('f_figure_scatter_plot', order_by)
     l_data = []
     column_name = 'manual_label'
     label_names = _df[column_name].unique().tolist()
@@ -63,8 +69,12 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None)
     for l in label_names:
         freq_colors.append(len(_df[_df[column_name] == l]))
 
-    sorted_names_freq = sorted(zip(freq_colors, label_names), reverse=True)
-    sorted_names = [x for _,x in sorted_names_freq]    
+    if order_by == 'Frequency':
+        sorted_names_freq = sorted(zip(freq_colors, label_names), reverse=True)
+        sorted_names = [x for _,x in sorted_names_freq]    
+    else:
+        sorted_names_freq = sorted(zip(label_names, freq_colors), reverse=False)
+        sorted_names = [x for x,_ in sorted_names_freq]    
 
     for name in sorted_names:
         #_selectedpoints = _df[column_name][
@@ -93,23 +103,23 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None)
             customdata=_custom_points,
             mode="markers",
             #marker=dict(size=20, symbol="circle", colorscale='rainbow'),
-            marker=dict(color = get_color(idx), size=12, symbol="circle"),
+            marker=dict(color = get_color(idx), size=10, symbol="circle"),
         )
         l_data.append(scatter)
     
     layout = go.Layout(
         modebar_orientation='h',
         legend=dict(yanchor='top', y=0.9),
-        xaxis={'visible': False},
-        yaxis={'visible': False},
-        #xaxis={'range': [-1, 1.1], 'autorange': True,
-        #       'gridcolor': 'rgba(0,0,0,0)', 'zeroline': False, 'showgrid': False},
-        #yaxis={'range': [-1, 1.1], 'autorange': True,
-        #       'gridcolor': 'rgba(0,0,0,0)', 'zeroline': False, 'showgrid': False},
+        xaxis={'visible': False, 'autorange': True, 'zeroline': True, 'showgrid': True, 'gridcolor': 'rgba(0,0,0,0)'},
+        yaxis={'visible': False, 'autorange': True, 'zeroline': True, 'showgrid': True, 'gridcolor': 'rgba(0,0,0,0)'},
+#        xaxis={'range': [-1, 1.1], 'autorange': True,
+#               'gridcolor': 'rgba(0,0,0,0)', 'zeroline': False, 'showgrid': False},
+#        yaxis={'range': [-1, 1.1], 'autorange': True,
+#               'gridcolor': 'rgba(0,0,0,0)', 'zeroline': False, 'showgrid': False},
+        plot_bgcolor=background_color,
         margin={'l': 0, 'r': 0, 'b': 0, 't': 0},
         dragmode='select',
         paper_bgcolor='aliceblue',
-        plot_bgcolor=background_color,
         showlegend = True
     )
 
@@ -117,11 +127,34 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None)
         prev_fig_full = prev_fig.full_figure_for_development()
         prev_layout = prev_fig_full.layout
 
+        print(prev_layout['xaxis'])
+        print(prev_layout['yaxis'])
+        
         layout['xaxis'] = prev_layout['xaxis']
         layout['yaxis'] = prev_layout['yaxis']
         layout['dragmode'] = prev_layout['dragmode']
+        layout['images'] = prev_layout['images']
     
     fig = go.Figure(data=l_data, layout=layout)
+
+    if prev_fig is None:
+        fig_full = fig.full_figure_for_development()
+
+        fig.add_layout_image(
+        dict(
+            source=Image.open(background_img),
+            xref="x",
+            yref="y",
+            x=fig_full.layout['xaxis']['range'][0],
+            y=fig_full.layout['yaxis']['range'][1],
+            sizex=fig_full.layout['xaxis']['range'][1] - fig_full.layout['xaxis']['range'][0],
+            sizey=fig_full.layout['yaxis']['range'][1] - fig_full.layout['yaxis']['range'][0],
+            sizing="stretch",
+            opacity=0.7,
+            layer="above")
+        )
+
+
 
     return fig
 
@@ -295,3 +328,55 @@ def update_df_paralelas_coord(
 
     return list(intersected_points)
     #return pd.DataFrame(columns=updated_df.columns)
+
+def get_image(path, paint = False, color = (1, 1, 1), zoom=0.2, dim = 255):
+    img = Image.open(path).convert('RGBA')
+    img = np.array(img)
+    if paint:
+        img[:,:,0] = np.uint8(img[:,:,0] * color[0])
+        img[:,:,1] = np.uint8(img[:,:,1] * color[1])
+        img[:,:,2] = np.uint8(img[:,:,2] * color[2])
+        img[:,:,3] = dim
+    img = Image.fromarray(img)
+    
+    return OffsetImage(img, zoom=zoom)
+
+def map_of_images(df, fig_scatter, path_to_images):
+    output_path = 'main/assets/temp.png'
+
+    xrange = fig_scatter.layout['xaxis']['range']
+    yrange = fig_scatter.layout['yaxis']['range']
+
+    df_filtered = df[(df['x'] >= xrange[0]) & (df['x'] <= xrange[1]) & (df['y'] >= yrange[0]) & (df['y'] <= yrange[1])]
+    
+    x = df_filtered['x']
+    y = df_filtered['y']
+    names = df_filtered['names']
+    paths = ['main/' + path_to_images + n for n in names]
+    zoom = 24/(xrange[1]-xrange[0])
+
+    f = plt.figure(figsize=(48,48), frameon=False)
+    ax = plt.Axes(f, [0., 0., 1., 1.])
+    ax.axis('off')
+    f.add_axes(ax)
+    ax.scatter(x, y, s=0) 
+    f.patch.set_facecolor('blue')
+    f.patch.set_alpha(0.7)
+
+    for xs, ys, path in zip(x, y,paths):
+        ab = AnnotationBbox(get_image(path, zoom=zoom), (xs, ys), frameon=False)
+        ax.add_artist(ab)
+        
+    #plt.grid()
+    #plt.axis('off')
+
+    ax.set_xlim(xrange)
+    ax.set_ylim(yrange)
+    f.savefig(output_path, bbox_inches='tight')
+
+    image = Image.open(output_path)
+    new_image = Image.new("RGBA", image.size, "WHITE") # Create a white rgba background
+    new_image.paste(image, (0, 0), image)              # Paste the image on the background. Go to the links given below for details.
+    new_image.convert('RGB').save(output_path, "PNG")  # Save as JPEG
+
+    return output_path

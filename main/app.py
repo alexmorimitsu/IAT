@@ -20,7 +20,7 @@ import imageselector
 import json
 import ast
 
-from os import mkdir
+from os import mkdir, getcwd
 from os.path import exists, join, dirname, basename
 import shutil
 import webbrowser
@@ -67,7 +67,7 @@ def init_appearance():
 
 path_to_images, csv_file, csv_folder, csv_basename, user_id, port = init(sys.argv)
 df = read_input_csv(csv_file)
-
+background_ranges = {'x': [df['x'].min(), df['x'].max()], 'y': [df['y'].min(), df['y'].max()]}
 
 init_par_coords = False #used for recomputing the intervals of the parcoords
 
@@ -182,8 +182,6 @@ IMAGES = create_list_dics(
 #fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=list(df['custom_data']))
 fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[])
 fig_full = fig.full_figure_for_development()
-print('f1', fig_full.layout)
-
 
 #_columns_paralelas_coordenadas = ['Layer_A', 'Layer_B', 'Layer_C', 'Layer_D', 'Layer_E', 'Layer_F', 'Layer_G']
 _columns_paralelas_coordenadas = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
@@ -220,8 +218,15 @@ app.layout = html.Div([
     dbc.Container(
         dbc.Row(
             [
-                dbc.Col(dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "80vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}), width={"size": 7}),
-
+                dbc.Col([
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Map of images",n_clicks=0, id='button_map_images', style={'background':'chocolate', 'width':'100%'}), width={'size': 4}),
+                        dbc.Col(
+                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False), width={'offset': 6, 'size': 2}),
+                    ]),
+                    dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "80vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+                ], width={"size": 7}),
                 dbc.Col([
                     dbc.Row([
                         dbc.Col(button_group_7, width={"size": 12})
@@ -282,6 +287,7 @@ app.layout = html.Div([
     dcc.Store(id='state_store_df', data=df.to_json()),
     dcc.Store(id='dummy_csv_save', data=0),
     dcc.Store(id='dummy_finish_work', data=0),
+    dcc.Store(id='dummy_map_images', data=0),
     html.Div(id='output')
 ]) #End html.DIV
 
@@ -333,7 +339,6 @@ def save_dataset(
     
     return [0]
 
-
 @app.callback(
     [
         Output('dummy_csv_save', 'data'),
@@ -359,6 +364,34 @@ def button_save_csv(
     
     return [0]
 
+@app.callback(
+    [
+        Output('dummy_map_images', 'data'),
+    ],
+    [
+        Input('button_map_images', 'n_clicks'),
+    ],
+    [
+        State('state_store_df', 'data'),
+        State('g_scatter_plot', 'figure'),
+    ]
+    )
+def create_map_of_images(
+    i_button_map_images,
+    s_store_df,
+    s_g_scatter_plot_figure
+    ):
+
+    global path_to_images
+
+    if i_button_map_images > 0:
+        df_updated = pd.read_json(s_store_df)
+        fig_scatter = go.Figure(s_g_scatter_plot_figure)
+
+        image_path = map_of_images(df_updated, fig_scatter, path_to_images)
+        webbrowser.open(join(getcwd(), image_path), new=2, autoraise=True)
+    
+    return [0]
 
 @app.callback(
     [
@@ -518,6 +551,7 @@ def mudanca_custom_data(
     [
     Input('selected_custom_points', 'data'),
     Input('unchecked_points', 'data'),
+    Input('dropdown_order_labels', 'value')
     ],
     [
     State('g_scatter_plot', 'figure'),
@@ -530,6 +564,7 @@ def mudanca_custom_data(
 def gerar_scatter_plot(
     i_selected_custom_points,
     i_unchecked_points,
+    i_dropdown_order_labels_value, 
     s_g_scatter_plot_figure,
     s_g_image_selector_images,
     s_g_coordenadas_paralelas_figure,
@@ -537,18 +572,16 @@ def gerar_scatter_plot(
     s_chart_flag_data,
     ):
 
-    #print('app.py entrou na gerar_scatter_plot')
+    global background_ranges
 
     prev_fig = go.Figure(s_g_scatter_plot_figure)
-
-    print('Prev fig', type(prev_fig))
 
     ctx = dash.callback_context
     flag_callback = ctx.triggered[0]['prop_id'].split('.')[0]
 
     _df = pd.read_json(s_store_df)
 
-    if flag_callback == 'selected_custom_points':
+    if flag_callback == 'selected_custom_points' or flag_callback == 'dropdown_order_labels':
    
         unchecked_points = json.loads(i_unchecked_points)
 
@@ -557,8 +590,8 @@ def gerar_scatter_plot(
         if init_par_coords:
             init_for_update_pc(selected_points)
 
-        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig)
-
+        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig, order_by=i_dropdown_order_labels_value)
+        
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         ordered_df = filtered_df.sort_values(by='D6') # show similar images close to each other
         checked_df = ordered_df.loc[-_df['custom_data'].isin(unchecked_points)]
@@ -623,5 +656,6 @@ if not opened:
     opened = True
 
 if __name__ == '__main__':
+    app.title = 'IAT'
     app.run_server(debug=False, port=port)
 
