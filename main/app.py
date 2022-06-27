@@ -36,10 +36,14 @@ def init(argv):
             [3] (string): User ID (default 1)
             [4] (string): Port to run the app (default 8025)
     """
-    path_to_images = argv[1][5:]
-    csv_file = argv[2]
+    project_name = argv[1]
+    batch_str = 'batch{:04d}'.format(int(argv[2]))
+    path_to_images = join('assets', project_name, 'images', batch_str, 'samples/')
+    csv_file = join('main', 'assets', project_name, 'dataframes', batch_str + '.csv')
     csv_folder = dirname(csv_file)
     csv_basename = basename(csv_file)
+    background_path = join('main', 'assets', project_name, 'backgrounds', batch_str + '.png')
+    
     user_id = 0
     if len(argv) > 3:
         port = int(argv[3])
@@ -47,7 +51,7 @@ def init(argv):
     if len(argv) > 4:
         port = int(argv[4])
 
-    return path_to_images, csv_file, csv_folder, csv_basename, user_id, port
+    return path_to_images, csv_file, csv_folder, csv_basename, background_path, user_id, port
 
 def read_input_csv(csv_file):
     """
@@ -65,7 +69,7 @@ def init_appearance():
     background_color = 'rgba(255, 250, 240, 100)'
     return background_color
 
-path_to_images, csv_file, csv_folder, csv_basename, user_id, port = init(sys.argv)
+path_to_images, csv_file, csv_folder, csv_basename, background_path, user_id, port = init(sys.argv)
 df = read_input_csv(csv_file)
 background_ranges = {'x': [df['x'].min(), df['x'].max()], 'y': [df['y'].min(), df['y'].max()]}
 
@@ -180,7 +184,7 @@ IMAGES = create_list_dics(
 #    _list_tags='')
 
 #fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=list(df['custom_data']))
-fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[])
+fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[], background_img=background_path)
 fig_full = fig.full_figure_for_development()
 
 #_columns_paralelas_coordenadas = ['Layer_A', 'Layer_B', 'Layer_C', 'Layer_D', 'Layer_E', 'Layer_F', 'Layer_G']
@@ -220,13 +224,33 @@ app.layout = html.Div([
             [
                 dbc.Col([
                     dbc.Row([
+#                        dbc.Col(
+#                            dbc.Button("Map of images",n_clicks=0, id='button_map_images', style={'background':'chocolate', 'width':'100%'})
+#                        , width={'size': 4}),
+                       dbc.Col(
+                            html.Div(
+                                html.P('Background opacity'),    
+                            style={'textAlign': 'right'})
+                        , width={'size': 2}),
+                        dbc.Col([
+                            dcc.Slider(0, 1, 0.1,
+                                    value=0.5,
+                                    id='slider_map_opacity',
+                                    marks=None,
+                                    tooltip={"placement": "bottom", "always_visible": True},
+                            ),
+                        ], width={'size': 4}),
                         dbc.Col(
-                            dbc.Button("Map of images",n_clicks=0, id='button_map_images', style={'background':'chocolate', 'width':'100%'}), width={'size': 4}),
+                            html.Div()
+                        , width={'size': 4}),
                         dbc.Col(
-                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False), width={'offset': 6, 'size': 2}),
-                    ]),
-                    dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "80vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False),
+                        width={'size': 2}),
+                        ]),
+
+                dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "80vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
                 ], width={"size": 7}),
+                
                 dbc.Col([
                     dbc.Row([
                         dbc.Col(button_group_7, width={"size": 12})
@@ -551,7 +575,8 @@ def mudanca_custom_data(
     [
     Input('selected_custom_points', 'data'),
     Input('unchecked_points', 'data'),
-    Input('dropdown_order_labels', 'value')
+    Input('dropdown_order_labels', 'value'),
+    Input('slider_map_opacity', 'value')
     ],
     [
     State('g_scatter_plot', 'figure'),
@@ -565,6 +590,7 @@ def gerar_scatter_plot(
     i_selected_custom_points,
     i_unchecked_points,
     i_dropdown_order_labels_value, 
+    i_slider_map_opacity_value, 
     s_g_scatter_plot_figure,
     s_g_image_selector_images,
     s_g_coordenadas_paralelas_figure,
@@ -572,7 +598,7 @@ def gerar_scatter_plot(
     s_chart_flag_data,
     ):
 
-    global background_ranges
+    global path_to_images, background_path
 
     prev_fig = go.Figure(s_g_scatter_plot_figure)
 
@@ -581,8 +607,11 @@ def gerar_scatter_plot(
 
     _df = pd.read_json(s_store_df)
 
-    if flag_callback == 'selected_custom_points' or flag_callback == 'dropdown_order_labels':
+    if flag_callback == 'selected_custom_points' or flag_callback == 'dropdown_order_labels' or flag_callback == 'slider_map_opacity':
    
+        opacity_changed = False
+        if flag_callback == 'slider_map_opacity':
+            opacity_changed = True
         unchecked_points = json.loads(i_unchecked_points)
 
         #print('app.py entrou na callback selected_custom_points')
@@ -590,7 +619,8 @@ def gerar_scatter_plot(
         if init_par_coords:
             init_for_update_pc(selected_points)
 
-        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig, order_by=i_dropdown_order_labels_value)
+        fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig, order_by=i_dropdown_order_labels_value,
+                                            background_img=background_path, opacity_changed = opacity_changed, opacity = i_slider_map_opacity_value)
         
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         ordered_df = filtered_df.sort_values(by='D6') # show similar images close to each other

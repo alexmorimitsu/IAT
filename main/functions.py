@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from PIL import Image
+from math import ceil, floor
+from timeit import default_timer as timer
 
 background_color = 'rgba(255, 250, 240, 100)'
 aux_list = [] * 7 #new
@@ -58,9 +60,9 @@ def create_list_dics(
 
 
 def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None, order_by = 'A-Z, a-z', 
-                          background_img = 'main/assets/temp.png'):
+                          background_img = 'main/assets/temp.png', xrange = [-80,80], yrange=[-80,80], opacity_changed = False, opacity=0.5):
+    #start = timer()
 
-    print('f_figure_scatter_plot', order_by)
     l_data = []
     column_name = 'manual_label'
     label_names = _df[column_name].unique().tolist()
@@ -124,37 +126,40 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
     )
 
     if prev_fig is not None:
-        prev_fig_full = prev_fig.full_figure_for_development()
-        prev_layout = prev_fig_full.layout
+        #copy_time = timer()
 
-        print(prev_layout['xaxis'])
-        print(prev_layout['yaxis'])
+        #copy_time2 = timer()
+        #print('Copy time:', copy_time2 - copy_time) 
+        prev_layout = prev_fig.layout
         
         layout['xaxis'] = prev_layout['xaxis']
         layout['yaxis'] = prev_layout['yaxis']
         layout['dragmode'] = prev_layout['dragmode']
-        layout['images'] = prev_layout['images']
+        if not opacity_changed:
+            layout['images'] = prev_layout['images']
     
     fig = go.Figure(data=l_data, layout=layout)
 
-    if prev_fig is None:
-        fig_full = fig.full_figure_for_development()
+    #draw_time = timer()
 
-        fig.add_layout_image(
-        dict(
-            source=Image.open(background_img),
-            xref="x",
-            yref="y",
-            x=fig_full.layout['xaxis']['range'][0],
-            y=fig_full.layout['yaxis']['range'][1],
-            sizex=fig_full.layout['xaxis']['range'][1] - fig_full.layout['xaxis']['range'][0],
-            sizey=fig_full.layout['yaxis']['range'][1] - fig_full.layout['yaxis']['range'][0],
-            sizing="stretch",
-            opacity=0.7,
-            layer="above")
-        )
-
-
+    if prev_fig is None or opacity_changed:
+        if opacity > 0:
+            fig.add_layout_image(
+            dict(
+                source=Image.open(background_img),
+                xref="x",
+                yref="y",
+                x=xrange[0],
+                y=yrange[1],
+                sizex=xrange[1]-xrange[0],
+                sizey=yrange[1]-yrange[0],
+                sizing="stretch",
+                opacity=opacity,
+                layer="below")
+            )
+    #end = timer()
+    #print('Draw time:', end - draw_time) 
+    #print('Scatter time:', end - start) 
 
     return fig
 
@@ -344,8 +349,10 @@ def get_image(path, paint = False, color = (1, 1, 1), zoom=0.2, dim = 255):
 def map_of_images(df, fig_scatter, path_to_images):
     output_path = 'main/assets/temp.png'
 
-    xrange = fig_scatter.layout['xaxis']['range']
-    yrange = fig_scatter.layout['yaxis']['range']
+    fig_scatter = go.Figure(fig_scatter)
+    fig_layout = fig_scatter.layout
+    xrange = [floor(fig_layout['xaxis'][0]), ceil(fig_layout['xaxis'][1])]
+    yrange = [floor(fig_layout['yaxis'][0]), ceil(fig_layout['yaxis'][1])]
 
     df_filtered = df[(df['x'] >= xrange[0]) & (df['x'] <= xrange[1]) & (df['y'] >= yrange[0]) & (df['y'] <= yrange[1])]
     
@@ -353,18 +360,16 @@ def map_of_images(df, fig_scatter, path_to_images):
     y = df_filtered['y']
     names = df_filtered['names']
     paths = ['main/' + path_to_images + n for n in names]
-    zoom = 24/(xrange[1]-xrange[0])
+    zoom = 12/(xrange[1]-xrange[0])
 
-    f = plt.figure(figsize=(48,48), frameon=False)
+    f = plt.figure(figsize=(24,24), frameon=False)
     ax = plt.Axes(f, [0., 0., 1., 1.])
     ax.axis('off')
     f.add_axes(ax)
     ax.scatter(x, y, s=0) 
-    f.patch.set_facecolor('blue')
-    f.patch.set_alpha(0.7)
 
     for xs, ys, path in zip(x, y,paths):
-        ab = AnnotationBbox(get_image(path, zoom=zoom), (xs, ys), frameon=False)
+        ab = AnnotationBbox(get_image(path, zoom=zoom), (xs, ys), frameon=False, box_alignment=(0, 0))
         ax.add_artist(ab)
         
     #plt.grid()
@@ -372,11 +377,11 @@ def map_of_images(df, fig_scatter, path_to_images):
 
     ax.set_xlim(xrange)
     ax.set_ylim(yrange)
-    f.savefig(output_path, bbox_inches='tight')
+    f.savefig(output_path, bbox_inches='tight', pad_inches = 0)
 
-    image = Image.open(output_path)
-    new_image = Image.new("RGBA", image.size, "WHITE") # Create a white rgba background
-    new_image.paste(image, (0, 0), image)              # Paste the image on the background. Go to the links given below for details.
-    new_image.convert('RGB').save(output_path, "PNG")  # Save as JPEG
+    #image = Image.open(output_path)
+    #new_image = Image.new("RGBA", image.size, "WHITE")
+    #new_image.paste(image, (0, 0), image)              
+    #new_image.convert('RGB').save(output_path, "PNG") 
 
     return output_path
