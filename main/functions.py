@@ -37,8 +37,13 @@ def compute_img_ratios(path_to_images, names):
         path = join('main', path_to_images, p)
         with Image.open(path) as img:
             width, height = img.size
-            widths.append(width)
-            heights.append(height)
+            r = height/width
+            if r < 0.25:
+                r = 0.25
+            if r > 1.6:
+                r = 1.6
+            widths.append(1)
+            heights.append(r)
     return widths, heights
 
 
@@ -111,7 +116,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
 
         scatter = go.Scattergl(
             name=_label,
-            hoverinfo='skip',
+            #hoverinfo='skip',
             x=val[_columns[0]],
             y=val[_columns[1]],
             selectedpoints=_selectedpoints,
@@ -144,6 +149,16 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
     )
 
     if prev_fig is not None:
+        prev_data = prev_fig.data
+
+        map_name_visibility = {}
+        for d in prev_data:
+            name = d['name'].split(' (')[0]
+            map_name_visibility[name] = d['visible']
+
+        for d in l_data:
+            name = d['name'].split(' (')[0]
+            d['visible'] = map_name_visibility[name]
         #copy_time = timer()
 
         #copy_time2 = timer()
