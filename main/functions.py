@@ -9,6 +9,8 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from PIL import Image
 from math import ceil, floor
 from timeit import default_timer as timer
+from os import listdir
+from os.path import join
 
 background_color = 'rgba(255, 250, 240, 100)'
 aux_list = [] * 7 #new
@@ -27,6 +29,17 @@ def get_colorscale(max_color):
     for i in range(max_color+1):
         colorscale.append([i*inc, get_color(i)])
     return colorscale
+
+def compute_img_ratios(path_to_images, names):
+    widths = []
+    heights = []
+    for p in names:
+        path = join('main', path_to_images, p)
+        with Image.open(path) as img:
+            width, height = img.size
+            widths.append(width)
+            heights.append(height)
+    return widths, heights
 
 
 def create_list_dics(
@@ -60,7 +73,7 @@ def create_list_dics(
 
 
 def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None, order_by = 'A-Z, a-z', 
-                          background_img = 'main/assets/temp.png', xrange = [-80,80], yrange=[-80,80], opacity_changed = False, opacity=0.5):
+                          background_img = 'main/assets/temp.png', xrange = [-75,75], yrange=[-75,75], opacity_changed = False, opacity=0, marker_size = 10):
     #start = timer()
 
     l_data = []
@@ -105,10 +118,15 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
             customdata=_custom_points,
             mode="markers",
             #marker=dict(size=20, symbol="circle", colorscale='rainbow'),
-            marker=dict(color = get_color(idx), size=10, symbol="circle"),
+            marker=dict(color = get_color(idx), size=marker_size, symbol="circle"),
         )
         l_data.append(scatter)
     
+#    scatter_time = timer()
+#    print('Scatter time:', scatter_time - start) 
+
+
+
     layout = go.Layout(
         modebar_orientation='h',
         legend=dict(yanchor='top', y=0.9),
@@ -140,7 +158,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
     
     fig = go.Figure(data=l_data, layout=layout)
 
-    #draw_time = timer()
+#    draw_time = timer()
 
     if prev_fig is None or opacity_changed:
         if opacity > 0:
@@ -157,9 +175,9 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
                 opacity=opacity,
                 layer="below")
             )
-    #end = timer()
-    #print('Draw time:', end - draw_time) 
-    #print('Scatter time:', end - start) 
+#    end = timer()
+#    print('Draw time:', end - draw_time) 
+#    print('Total time:', end - start) 
 
     return fig
 
@@ -369,7 +387,7 @@ def map_of_images(df, fig_scatter, path_to_images):
     ax.scatter(x, y, s=0) 
 
     for xs, ys, path in zip(x, y,paths):
-        ab = AnnotationBbox(get_image(path, zoom=zoom), (xs, ys), frameon=False, box_alignment=(0, 0))
+        ab = AnnotationBbox(get_image(path, zoom=zoom), (xs, ys), frameon=False, box_alignment=(1, 1))
         ax.add_artist(ab)
         
     #plt.grid()

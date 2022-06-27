@@ -1,5 +1,7 @@
 
 import sys
+
+from pyrsistent import s
 assert len(sys.argv) >= 3
 
 from functions import *
@@ -20,7 +22,7 @@ import imageselector
 import json
 import ast
 
-from os import mkdir, getcwd
+from os import mkdir, getcwd, listdir
 from os.path import exists, join, dirname, basename
 import shutil
 import webbrowser
@@ -71,6 +73,10 @@ def init_appearance():
 
 path_to_images, csv_file, csv_folder, csv_basename, background_path, user_id, port = init(sys.argv)
 df = read_input_csv(csv_file)
+widths, heights = compute_img_ratios(path_to_images, df['names'])
+df['widths'] = widths
+df['heights'] = heights
+
 background_ranges = {'x': [df['x'].min(), df['x'].max()], 'y': [df['y'].min(), df['y'].max()]}
 
 init_par_coords = False #used for recomputing the intervals of the parcoords
@@ -185,7 +191,6 @@ IMAGES = create_list_dics(
 
 #fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=list(df['custom_data']))
 fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[], background_img=background_path)
-fig_full = fig.full_figure_for_development()
 
 #_columns_paralelas_coordenadas = ['Layer_A', 'Layer_B', 'Layer_C', 'Layer_D', 'Layer_E', 'Layer_F', 'Layer_G']
 _columns_paralelas_coordenadas = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
@@ -234,15 +239,33 @@ app.layout = html.Div([
                         , width={'size': 2}),
                         dbc.Col([
                             dcc.Slider(0, 1, 0.1,
-                                    value=0.5,
+                                    value=0,
                                     id='slider_map_opacity',
                                     marks=None,
                                     tooltip={"placement": "bottom", "always_visible": True},
                             ),
-                        ], width={'size': 4}),
+                        ], width={'size': 2}),
                         dbc.Col(
                             html.Div()
-                        , width={'size': 4}),
+                        , width={'size': 1}),
+
+                       dbc.Col(
+                            html.Div(
+                                html.P('Marker size'),    
+                            style={'textAlign': 'right'})
+                        , width={'size': 2}),
+                        dbc.Col([
+                            dcc.Slider(1, 25, 3,
+                                    value=10,
+                                    id='slider_marker_size',
+                                    marks=None,
+                                    tooltip={"placement": "bottom", "always_visible": True},
+                            ),
+                        ], width={'size': 2}),
+                        dbc.Col(
+                            html.Div()
+                        , width={'size': 1}),
+
                         dbc.Col(
                             dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False),
                         width={'size': 2}),
@@ -388,34 +411,34 @@ def button_save_csv(
     
     return [0]
 
-@app.callback(
-    [
-        Output('dummy_map_images', 'data'),
-    ],
-    [
-        Input('button_map_images', 'n_clicks'),
-    ],
-    [
-        State('state_store_df', 'data'),
-        State('g_scatter_plot', 'figure'),
-    ]
-    )
-def create_map_of_images(
-    i_button_map_images,
-    s_store_df,
-    s_g_scatter_plot_figure
-    ):
+# @app.callback(
+#     [
+#         Output('dummy_map_images', 'data'),
+#     ],
+#     [
+#         Input('button_map_images', 'n_clicks'),
+#     ],
+#     [
+#         State('state_store_df', 'data'),
+#         State('g_scatter_plot', 'figure'),
+#     ]
+#     )
+# def create_map_of_images(
+#     i_button_map_images,
+#     s_store_df,
+#     s_g_scatter_plot_figure
+#     ):
 
-    global path_to_images
+#     global path_to_images
 
-    if i_button_map_images > 0:
-        df_updated = pd.read_json(s_store_df)
-        fig_scatter = go.Figure(s_g_scatter_plot_figure)
+#     if i_button_map_images > 0:
+#         df_updated = pd.read_json(s_store_df)
+#         fig_scatter = go.Figure(s_g_scatter_plot_figure)
 
-        image_path = map_of_images(df_updated, fig_scatter, path_to_images)
-        webbrowser.open(join(getcwd(), image_path), new=2, autoraise=True)
+#         image_path = map_of_images(df_updated, fig_scatter, path_to_images)
+#         webbrowser.open(join(getcwd(), image_path), new=2, autoraise=True)
     
-    return [0]
+#     return [0]
 
 @app.callback(
     [
@@ -576,7 +599,8 @@ def mudanca_custom_data(
     Input('selected_custom_points', 'data'),
     Input('unchecked_points', 'data'),
     Input('dropdown_order_labels', 'value'),
-    Input('slider_map_opacity', 'value')
+    Input('slider_map_opacity', 'value'),
+    Input('slider_marker_size', 'value')
     ],
     [
     State('g_scatter_plot', 'figure'),
@@ -591,6 +615,7 @@ def gerar_scatter_plot(
     i_unchecked_points,
     i_dropdown_order_labels_value, 
     i_slider_map_opacity_value, 
+    i_slider_marker_size_value, 
     s_g_scatter_plot_figure,
     s_g_image_selector_images,
     s_g_coordenadas_paralelas_figure,
@@ -598,7 +623,7 @@ def gerar_scatter_plot(
     s_chart_flag_data,
     ):
 
-    global path_to_images, background_path
+    global path_to_images, background_path, widths, heights
 
     prev_fig = go.Figure(s_g_scatter_plot_figure)
 
@@ -607,7 +632,8 @@ def gerar_scatter_plot(
 
     _df = pd.read_json(s_store_df)
 
-    if flag_callback == 'selected_custom_points' or flag_callback == 'dropdown_order_labels' or flag_callback == 'slider_map_opacity':
+    if flag_callback == 'selected_custom_points' or flag_callback == 'dropdown_order_labels' or \
+        flag_callback == 'slider_map_opacity' or flag_callback == 'slider_marker_size':
    
         opacity_changed = False
         if flag_callback == 'slider_map_opacity':
@@ -620,7 +646,8 @@ def gerar_scatter_plot(
             init_for_update_pc(selected_points)
 
         fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig, order_by=i_dropdown_order_labels_value,
-                                            background_img=background_path, opacity_changed = opacity_changed, opacity = i_slider_map_opacity_value)
+                                            background_img=background_path, opacity_changed = opacity_changed, opacity = i_slider_map_opacity_value,
+                                            marker_size = i_slider_marker_size_value)
         
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         ordered_df = filtered_df.sort_values(by='D6') # show similar images close to each other
@@ -630,6 +657,10 @@ def gerar_scatter_plot(
 
         _image_teste_list_correct_label = ordered_df['correct_label']
         _image_teste_list_names = ordered_df['names']
+
+        _image_teste_list_widths = ordered_df['widths']
+        _image_teste_list_heights = ordered_df['heights']
+
         _image_teste_list_caption = ordered_df['manual_label']
         _image_teste_list_custom_data = ordered_df['custom_data']
 
@@ -643,8 +674,8 @@ def gerar_scatter_plot(
             _list_src=list(path_to_images + _image_teste_list_names),
             _list_thumbnail=list(path_to_images + _image_teste_list_names),
             _list_name_figure=list(_image_teste_list_names),
-            _list_thumbnailWidth=[THUMBNAIL_WIDTH] * _image_teste_list_correct_label.shape[0],
-            _list_thumbnailHeight=[THUMBNAIL_HEIGHT] * _image_teste_list_correct_label.shape[0],
+            _list_thumbnailWidth=list(_image_teste_list_widths),
+            _list_thumbnailHeight=list(_image_teste_list_heights),
             _list_isSelected= [True] * _image_teste_list_correct_label.shape[0],
             _list_custom_data=list(_image_teste_list_custom_data),
             _list_thumbnailCaption=_image_teste_list_caption,
@@ -683,7 +714,7 @@ def gerar_scatter_plot(
 opened = False
 if not opened:
     webbrowser.open('http://127.0.0.1:' + str(port) + '/', new=2, autoraise=True)
-    opened = True
+    opened = False
 
 if __name__ == '__main__':
     app.title = 'IAT'
