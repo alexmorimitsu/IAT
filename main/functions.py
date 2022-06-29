@@ -158,7 +158,8 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
 
         for d in l_data:
             name = d['name'].split(' (')[0]
-            d['visible'] = map_name_visibility[name]
+            if name in map_name_visibility:
+                d['visible'] = map_name_visibility[name]
         #copy_time = timer()
 
         #copy_time2 = timer()

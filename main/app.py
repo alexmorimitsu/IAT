@@ -165,7 +165,25 @@ button_group_6 = dbc.ButtonGroup(
 
 button_group_7 = dbc.ButtonGroup(
     [
-        dcc.Checklist([' Save CSV after relabeling'], id = 'check_save_csv'),
+        dcc.Checklist([' Save CSV after labeling'], value = [' Save CSV after labeling'], id = 'check_save_csv'),
+    ],
+    #vertical=True,
+    className='my-btn-group',
+    size="lg",
+)
+
+button_group_8 = dbc.ButtonGroup(
+    [
+        dcc.Checklist([' Discard images after labeling'], value = [' Discard images after labeling'], id = 'check_discard_marked'),
+    ],
+    #vertical=True,
+    className='my-btn-group',
+    size="lg",
+)
+
+button_group_9 = dbc.ButtonGroup(
+    [
+        dcc.Checklist([' Marked images first'], value = [' Marked images first'], id = 'check_marked_first'),
     ],
     #vertical=True,
     className='my-btn-group',
@@ -232,7 +250,7 @@ app.layout = html.Div([
 #                        dbc.Col(
 #                            dbc.Button("Map of images",n_clicks=0, id='button_map_images', style={'background':'chocolate', 'width':'100%'})
 #                        , width={'size': 4}),
-                       dbc.Col(
+                        dbc.Col(
                             html.Div(
                                 html.P('Background opacity'),    
                             style={'textAlign': 'right'})
@@ -265,36 +283,39 @@ app.layout = html.Div([
                         dbc.Col(
                             html.Div()
                         , width={'size': 1}),
-
                         dbc.Col(
-                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False),
-                        width={'size': 2}),
-                        ]),
+                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
+                        , width={'size': 2}),
+                    ], align='bottom'),
 
-                dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "80vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+                dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "75vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
                 ], width={"size": 7}),
                 
                 dbc.Col([
                     dbc.Row([
-                        dbc.Col(button_group_7, width={"size": 12})
-                        ]),
+                        dbc.Col(button_group_7, width={"size": 6}),
+                        dbc.Col(button_group_8, width={"size": 6}),
+                    ]),
                     dbc.Row([
                         #dbc.Col(button_group_1, width={"size": 6}),
                         #dbc.Col(button_group_2, width={"size": 6})
                         dbc.Col(button_group_2, width={"size": 12})
-                        ]),
+                    ]),
                     dbc.Row([dbc.Col(html.Hr()),],),
 
                     dbc.Row(
                         html.Div(imageselector.ImageSelector(id='g_image_selector', images=IMAGES,
                             galleryHeaderStyle = {'position': 'sticky', 'top': 0, 'height': '0px', 'background': "#000000", 'zIndex': -1},),
-                            id='XXXXXXXXXX', style=dict(height='62vh',overflow='scroll', backgroundColor=background_color)
+                            id='XXXXXXXXXX', style=dict(height='63vh',overflow='scroll', backgroundColor=background_color)
                             )
                         ),
 
-                    dbc.Row([dbc.Col(html.Hr()),],),
                     dbc.Row([
-                        dbc.Col(button_group_6, width={"size": 4})
+                        dbc.Col(button_group_6, width={"size": 4}),
+                        dbc.Col(button_group_9, width={"size": 3}),
+                        dbc.Col(
+                            dcc.Dropdown(['Similarity', 'A-Z, a-z'], value='Similarity', id='dropdown_order_images', clearable = False)
+                        , width={'offset': 2, 'size': 3})
                     ]),
                     ], width={"size": 5}),
                     
@@ -462,9 +483,10 @@ def button_save_csv(
         State('state_store_df', 'data'),
         State('g_coordenadas_paralelas', 'figure'),
         State('g_image_selector', 'images'),
-        State("input_aplicar_novo_label", "value"),
-        State("check_save_csv", "value"),
-        State("input_save_csv", "value"),
+        State('input_aplicar_novo_label', 'value'),
+        State('check_save_csv', 'value'),
+        State('input_save_csv', 'value'),
+        State('check_discard_marked', 'value')
     ]
     )
 def mudanca_custom_data(
@@ -482,7 +504,8 @@ def mudanca_custom_data(
     s_button_galeria_filtrar_images,
     s_input_aplicar_novo_label_value,
     s_check_save_csv_value,
-    s_input_save_csv_value
+    s_input_save_csv_value,
+    s_check_discard_marked_value
     ):
 
     #print('app.py entrou no mudanca_custom_data')
@@ -501,6 +524,7 @@ def mudanca_custom_data(
     flag_callback = ctx.triggered[0]['prop_id'].split('.')[0]
 
     df_store_updated = df_updated.to_json()
+    selectedpoints = s_selected_custom_points
     unchecked_points = []
 
     if flag_callback == 'g_scatter_plot':
@@ -559,12 +583,14 @@ def mudanca_custom_data(
             next_label_id += 1
         df_updated['colors'][df_updated['custom_data'].isin(selected_and_checked)] = labels_colors[new_label]
         
-        if s_check_save_csv_value == [' Save CSV after relabeling']:
+        if s_check_save_csv_value == [' Save CSV after labeling']:
             save_csv(df_updated, str(s_input_save_csv_value))
         
         df_store_updated = df_updated.to_json()
-        selectedpoints = json.dumps(selected_not_checked)
-
+        
+        if s_check_discard_marked_value == [' Discard images after labeling']:
+            selectedpoints = json.dumps(selected_not_checked)
+            
     elif flag_callback == 'button_undo':
         df_updated['manual_label'] = labels_buffer
         df_updated['colors'] = colors_buffer
@@ -579,7 +605,6 @@ def mudanca_custom_data(
             if point['isSelected'] == True:
                 unchecked_points.append(point['custom_data'])
         df_store_updated = df_updated.to_json()
-        selectedpoints = s_selected_custom_points
     else:
         set_chart_flag = 0
         #selectedpoints = json.dumps(list(df_updated['custom_data']))
@@ -600,22 +625,26 @@ def mudanca_custom_data(
     Input('unchecked_points', 'data'),
     Input('dropdown_order_labels', 'value'),
     Input('slider_map_opacity', 'value'),
-    Input('slider_marker_size', 'value')
+    Input('slider_marker_size', 'value'),
+    Input('dropdown_order_images', 'value'),
+    Input('check_marked_first', 'value'),
     ],
     [
     State('g_scatter_plot', 'figure'),
     State('g_image_selector', "images"),
     State('g_coordenadas_paralelas', 'figure'),
     State('state_store_df', 'data'),
-    State('chart_flag', 'data')
+    State('chart_flag', 'data'),
     ]
     )
-def gerar_scatter_plot(
+def scatter_plot_image_selector(
     i_selected_custom_points,
     i_unchecked_points,
     i_dropdown_order_labels_value, 
     i_slider_map_opacity_value, 
     i_slider_marker_size_value, 
+    i_dropdown_order_images_value,
+    i_check_marked_first_value,
     s_g_scatter_plot_figure,
     s_g_image_selector_images,
     s_g_coordenadas_paralelas_figure,
@@ -631,9 +660,10 @@ def gerar_scatter_plot(
     flag_callback = ctx.triggered[0]['prop_id'].split('.')[0]
 
     _df = pd.read_json(s_store_df)
+    print(flag_callback)
 
-    if flag_callback == 'selected_custom_points' or flag_callback == 'dropdown_order_labels' or \
-        flag_callback == 'slider_map_opacity' or flag_callback == 'slider_marker_size':
+    if flag_callback in ['selected_custom_points', 'dropdown_order_labels', 'slider_map_opacity', 'slider_marker_size',
+                         'dropdown_order_images', 'check_marked_first']:
    
         opacity_changed = False
         if flag_callback == 'slider_map_opacity':
@@ -650,11 +680,28 @@ def gerar_scatter_plot(
                                             marker_size = i_slider_marker_size_value)
         
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
-        ordered_df = filtered_df.sort_values(by='D6') # show similar images close to each other
-        checked_df = ordered_df.loc[-_df['custom_data'].isin(unchecked_points)]
-        unchecked_df = ordered_df.loc[_df['custom_data'].isin(unchecked_points)]
-        ordered_df = pd.concat([checked_df, unchecked_df])
-
+        if i_dropdown_order_images_value == 'Similarity': # show similar images close to each other
+            ordered_df = filtered_df.sort_values(by='D7') 
+        else:
+            ordered_df = filtered_df.sort_values(by='manual_label') 
+            
+        if flag_callback in ['dropdown_order_images', 'check_marked_first']:   
+            data_temp = [l['custom_data'] for l in s_g_image_selector_images]
+            selection_temp = [l['isSelected'] for l in s_g_image_selector_images]
+                        
+        else:
+            data_temp = selected_points
+            selection_temp = [(x not in unchecked_points) for x in data_temp]
+        
+        df_selection = pd.DataFrame(list(zip(data_temp, selection_temp)), columns =['custom_data', 'selected'])               
+        
+        ordered_df = pd.merge(ordered_df, df_selection, how="inner", on='custom_data')     
+        
+        if i_check_marked_first_value == [' Marked images first']:
+            checked_df = ordered_df[ordered_df['selected'] == True]
+            unchecked_df = ordered_df[ordered_df['selected'] == False]
+            ordered_df = pd.concat([checked_df, unchecked_df])
+            
         _image_teste_list_correct_label = ordered_df['correct_label']
         _image_teste_list_names = ordered_df['names']
 
@@ -663,27 +710,26 @@ def gerar_scatter_plot(
 
         _image_teste_list_caption = ordered_df['manual_label']
         _image_teste_list_custom_data = ordered_df['custom_data']
+                    
+        _image_teste_list_selection = list(ordered_df['selected'])
+        
 
         #old
         #_image_teste_list_correct_label = updated_df['correct_label'][updated_df['custom_data'].isin(selected_points)]
         #_image_teste_list_names = updated_df['names'][updated_df['custom_data'].isin(selected_points)]
         #_image_teste_list_caption = updated_df['manual_label'][updated_df['custom_data'].isin(selected_points)]
         #_image_teste_list_custom_data = updated_df['custom_data'][updated_df['custom_data'].isin(selected_points)]
-
+        
         fig2 = create_list_dics(
             _list_src=list(path_to_images + _image_teste_list_names),
             _list_thumbnail=list(path_to_images + _image_teste_list_names),
             _list_name_figure=list(_image_teste_list_names),
             _list_thumbnailWidth=list(_image_teste_list_widths),
             _list_thumbnailHeight=list(_image_teste_list_heights),
-            _list_isSelected= [True] * _image_teste_list_correct_label.shape[0],
+            _list_isSelected= _image_teste_list_selection,
             _list_custom_data=list(_image_teste_list_custom_data),
             _list_thumbnailCaption=_image_teste_list_caption,
             _list_tags=[['A', 'B']] * _image_teste_list_correct_label.shape[0])
-
-        for point in fig2:
-            if point['custom_data'] in unchecked_points:
-                point['isSelected'] = False
 
         if s_chart_flag_data == 1:
             #print('app.py chamando fpc via if')
