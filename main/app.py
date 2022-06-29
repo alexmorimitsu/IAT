@@ -38,10 +38,16 @@ def init(argv):
             [3] (string): User ID (default 1)
             [4] (string): Port to run the app (default 8025)
     """
-    project_name = argv[1]
-    batch_str = 'batch{:04d}'.format(int(argv[2]))
-    path_to_images = join('assets', project_name, 'images', batch_str, 'samples/')
-    csv_file = join('main', 'assets', project_name, 'dataframes', batch_str + '.csv')
+    
+    path_to_images = argv[1]
+    csv_file = argv[2]
+    print('img', path_to_images)
+    print('csv', csv_file)
+
+
+    project_name = path_to_images.split('/')[1]
+    batch_str = csv_file[-13:-4]
+
     csv_folder = dirname(csv_file)
     csv_basename = basename(csv_file)
     background_path = join('main', 'assets', project_name, 'backgrounds', batch_str + '.png')
@@ -165,7 +171,7 @@ button_group_6 = dbc.ButtonGroup(
 
 button_group_7 = dbc.ButtonGroup(
     [
-        dcc.Checklist([' Save CSV after labeling'], value = [' Save CSV after labeling'], id = 'check_save_csv'),
+        dcc.Checklist([' Save CSV after labeling'], value = [], id = 'check_save_csv'),
     ],
     #vertical=True,
     className='my-btn-group',
@@ -183,9 +189,9 @@ button_group_8 = dbc.ButtonGroup(
 
 button_group_9 = dbc.ButtonGroup(
     [
-        dcc.Checklist([' Marked images first'], value = [' Marked images first'], id = 'check_marked_first'),
+        dcc.Checklist([' Marked images first'], value = [], id = 'check_marked_first'),
     ],
-    #vertical=True,
+#    vertical=True,
     className='my-btn-group',
     size="lg",
 )
@@ -246,6 +252,7 @@ app.layout = html.Div([
         dbc.Row(
             [
                 dbc.Col([
+                    dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "74vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
                     dbc.Row([
 #                        dbc.Col(
 #                            dbc.Button("Map of images",n_clicks=0, id='button_map_images', style={'background':'chocolate', 'width':'100%'})
@@ -253,7 +260,7 @@ app.layout = html.Div([
                         dbc.Col(
                             html.Div(
                                 html.P('Background opacity'),    
-                            style={'textAlign': 'right'})
+                            style={'textAlign': 'left'})
                         , width={'size': 2}),
                         dbc.Col([
                             dcc.Slider(0, 1, 0.1,
@@ -262,10 +269,10 @@ app.layout = html.Div([
                                     marks=None,
                                     tooltip={"placement": "bottom", "always_visible": True},
                             ),
-                        ], width={'size': 2}),
-                        dbc.Col(
-                            html.Div()
-                        , width={'size': 1}),
+                        ], width={'size': 3}),
+#                        dbc.Col(
+#                            html.Div()
+#                        , width={'size': 1}),
 
                        dbc.Col(
                             html.Div(
@@ -279,16 +286,14 @@ app.layout = html.Div([
                                     marks=None,
                                     tooltip={"placement": "bottom", "always_visible": True},
                             ),
-                        ], width={'size': 2}),
-                        dbc.Col(
-                            html.Div()
-                        , width={'size': 1}),
+                        ], width={'size': 3}),
+#                        dbc.Col(
+#                            html.Div()
+#                        , width={'size': 1}),
                         dbc.Col(
                             dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
                         , width={'size': 2}),
                     ], align='bottom'),
-
-                dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "75vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
                 ], width={"size": 7}),
                 
                 dbc.Col([
@@ -312,10 +317,10 @@ app.layout = html.Div([
 
                     dbc.Row([
                         dbc.Col(button_group_6, width={"size": 4}),
-                        dbc.Col(button_group_9, width={"size": 3}),
+                        dbc.Col(button_group_9, width={"size": 5}),
                         dbc.Col(
                             dcc.Dropdown(['Similarity', 'A-Z, a-z'], value='Similarity', id='dropdown_order_images', clearable = False)
-                        , width={'offset': 2, 'size': 3})
+                        , width={'offset': 0, 'size': 3})
                     ]),
                     ], width={"size": 5}),
                     

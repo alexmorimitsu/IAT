@@ -57,7 +57,7 @@ def create_list_dics(
     _list_custom_data=None,
     _list_thumbnailCaption=None,
     _list_tags=None):
-
+    
     _data = {
       'src': _list_src,
       'thumbnail': _list_thumbnail,
@@ -78,7 +78,7 @@ def create_list_dics(
 
 
 def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None, order_by = 'A-Z, a-z', 
-                          background_img = 'main/assets/temp.png', xrange = [-75,75], yrange=[-75,75], opacity_changed = False, opacity=0, marker_size = 10):
+                          background_img = 'main/assets/temp.png', xrange = [-80,80], yrange=[-80,80], opacity_changed = False, opacity=0, marker_size = 10):
     #start = timer()
 
     l_data = []
@@ -124,6 +124,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
             mode="markers",
             #marker=dict(size=20, symbol="circle", colorscale='rainbow'),
             marker=dict(color = get_color(idx), size=marker_size, symbol="circle"),
+            hovertemplate="id = %{customdata}",
         )
         l_data.append(scatter)
     
