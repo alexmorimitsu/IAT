@@ -16,6 +16,8 @@ import sys
 
 from threading import Thread
 
+port = 8020
+
 def create_table(path_to_project):
     path = join(path_to_project, 'dataframes')
     file_list = [f for f in listdir(path) if (isfile(join(path, f)) and f.startswith('batch'))]
@@ -133,9 +135,9 @@ app.title = 'IAT Menu'
 
 opened = False
 if not opened:
-    webbrowser.open('http://127.0.0.1:' + str(8025) + '/', new=2, autoraise=True)
+    webbrowser.open('http://127.0.0.1:' + str(port) + '/', new=2, autoraise=True)
     opened = True
 
 if __name__ == '__main__':
-    app.run_server(debug=False, port=8020)
+    app.run_server(debug=False, port=port)
 
