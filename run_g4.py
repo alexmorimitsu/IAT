@@ -62,7 +62,7 @@ def show_status(batches_path, dataframes_path):
 
 projects_path = 'main/assets/'
 
-project_name = 'lroot_g4_no_cosc'
+project_name = 'lroot_g4'
 
 dataframes_path = 'main/assets/' + project_name + '/dataframes/'
 samples_path = 'main/assets/' + project_name + '/samples/' + project_name
