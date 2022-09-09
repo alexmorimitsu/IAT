@@ -40,7 +40,9 @@ def init(argv):
     """
     
     path_to_images = argv[1]
-    csv_file = argv[2]
+    path_to_thumbnails = argv[2]
+    csv_file = argv[3]
+
     print('img', path_to_images)
     print('csv', csv_file)
 
@@ -53,13 +55,13 @@ def init(argv):
     background_path = join('main', 'assets', project_name, 'backgrounds', batch_str + '.png')
     
     user_id = 0
-    if len(argv) > 3:
-        port = int(argv[3])
-    port = 8025
     if len(argv) > 4:
         port = int(argv[4])
+    port = 8025
+    if len(argv) > 5:
+        port = int(argv[5])
 
-    return path_to_images, csv_file, csv_folder, csv_basename, background_path, user_id, port
+    return path_to_images, path_to_thumbnails, csv_file, csv_folder, csv_basename, background_path, user_id, port
 
 def read_input_csv(csv_file):
     """
@@ -77,7 +79,7 @@ def init_appearance():
     background_color = 'rgba(255, 250, 240, 100)'
     return background_color
 
-path_to_images, csv_file, csv_folder, csv_basename, background_path, user_id, port = init(sys.argv)
+path_to_images, path_to_thumbnails, csv_file, csv_folder, csv_basename, background_path, user_id, port = init(sys.argv)
 df = read_input_csv(csv_file)
 widths, heights = compute_img_ratios(path_to_images, df['names'])
 df['widths'] = widths
@@ -291,7 +293,7 @@ app.layout = html.Div([
 #                            html.Div()
 #                        , width={'size': 1}),
                         dbc.Col(
-                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
+                            dcc.Dropdown(['(class) A-Z, a-z', '(class) Frequency', '(binary) A-Z, a-z', '(binary) Frequency'], value='(class) A-Z, a-z', id='dropdown_order_labels', clearable = False)
                         , width={'size': 2}),
                     ], align='bottom'),
                 ], width={"size": 7}),
@@ -657,7 +659,7 @@ def scatter_plot_image_selector(
     s_chart_flag_data,
     ):
 
-    global path_to_images, background_path, widths, heights
+    global path_to_images, path_to_thumbnails, background_path, widths, heights
 
     prev_fig = go.Figure(s_g_scatter_plot_figure)
 
@@ -709,13 +711,15 @@ def scatter_plot_image_selector(
             
         _image_teste_list_correct_label = ordered_df['correct_label']
         _image_teste_list_names = ordered_df['names']
-
+        
         _image_teste_list_widths = ordered_df['widths']
         _image_teste_list_heights = ordered_df['heights']
 
         _image_teste_list_caption = ordered_df['manual_label']
         _image_teste_list_custom_data = ordered_df['custom_data']
-                    
+        _image_teste_list_texts = ['id: ' + str(id) + ' (' + label + ') - ' + name \
+            for id, label, name in zip(_image_teste_list_custom_data, _image_teste_list_caption, _image_teste_list_names)]
+
         _image_teste_list_selection = list(ordered_df['selected'])
         
 
@@ -727,14 +731,16 @@ def scatter_plot_image_selector(
         
         fig2 = create_list_dics(
             _list_src=list(path_to_images + _image_teste_list_names),
-            _list_thumbnail=list(path_to_images + _image_teste_list_names),
+            _list_thumbnail=list(path_to_thumbnails + _image_teste_list_names),
             _list_name_figure=list(_image_teste_list_names),
             _list_thumbnailWidth=list(_image_teste_list_widths),
             _list_thumbnailHeight=list(_image_teste_list_heights),
             _list_isSelected= _image_teste_list_selection,
             _list_custom_data=list(_image_teste_list_custom_data),
+            _list_caption=_image_teste_list_texts,
             _list_thumbnailCaption=_image_teste_list_caption,
-            _list_tags=[['A', 'B']] * _image_teste_list_correct_label.shape[0])
+            #_list_tags=[[{'value': "Nature", 'title': "Nature | Flowers"}]] * _image_teste_list_correct_label.shape[0])
+            _list_tags=[[]] * _image_teste_list_correct_label.shape[0])
 
         if s_chart_flag_data == 1:
             #print('app.py chamando fpc via if')

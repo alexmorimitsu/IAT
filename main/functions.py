@@ -55,6 +55,7 @@ def create_list_dics(
     _list_thumbnailHeight=None,
     _list_isSelected=None,
     _list_custom_data=None,
+    _list_caption=None,
     _list_thumbnailCaption=None,
     _list_tags=None):
     
@@ -66,12 +67,13 @@ def create_list_dics(
       'thumbnailHeight': _list_thumbnailHeight,
       'isSelected': _list_isSelected,
       'custom_data': _list_custom_data,
+      'caption': _list_caption,
       'thumbnailCaption': _list_thumbnailCaption,
       'tags': _list_tags
     }
 
     _df_dict = pd.DataFrame(_data)
-    _df_dict = _df_dict[['src', 'thumbnail', 'name_figure','thumbnailWidth','thumbnailHeight','isSelected','custom_data', 'thumbnailCaption']]
+    _df_dict = _df_dict[['src', 'thumbnail', 'name_figure','thumbnailWidth','thumbnailHeight','isSelected','custom_data', 'caption', 'thumbnailCaption', 'tags']]
     _df_dict = _df_dict.to_dict('records')
 
     return _df_dict
@@ -83,13 +85,19 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
 
     l_data = []
     column_name = 'manual_label'
+    column_colors = 'colors'
+
+    if '(binary)' in order_by:
+        column_name = 'binary_label'
+        column_colors = 'binary_color'
+
     label_names = _df[column_name].unique().tolist()
 
     freq_colors = []
     for l in label_names:
         freq_colors.append(len(_df[_df[column_name] == l]))
 
-    if order_by == 'Frequency':
+    if 'Frequency' in order_by:
         sorted_names_freq = sorted(zip(freq_colors, label_names), reverse=True)
         sorted_names = [x for _,x in sorted_names_freq]    
     else:
@@ -102,11 +110,12 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
         #    (_df['custom_data'].isin(_selected_custom_data))
         #].index.values
         val = _df[_df[column_name] == name].reset_index()
-        idx = int(val['colors'].iloc[0])
+        idx = int(val[column_colors].iloc[0])
 
         _selectedpoints = val.index[val['custom_data'].isin(_selected_custom_data)].tolist()
 
-        _custom_points = _df['custom_data'][(_df[column_name] == name)]
+        sub_df = _df[column_name] == name
+        _custom_points = _df['custom_data'][(sub_df)]
         _label = name + ' (' + str(val.shape[0]) + ')'
 
 #        _temp = []
@@ -124,7 +133,7 @@ def f_figure_scatter_plot(_df, _columns, _selected_custom_data, prev_fig = None,
             mode="markers",
             #marker=dict(size=20, symbol="circle", colorscale='rainbow'),
             marker=dict(color = get_color(idx), size=marker_size, symbol="circle"),
-            hovertemplate="id = %{customdata}",
+            hovertemplate='id = %{customdata}',
         )
         l_data.append(scatter)
     
