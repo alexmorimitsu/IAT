@@ -79,4 +79,4 @@ batch_id = int(text)
 path_to_images = join(images_path, 'batch{:04d}'.format(batch_id), 'samples/')
 path_to_csv = dataframes_path + 'batch{:04d}'.format(batch_id) + '.csv'
 
-system('python main/app.py ' + path_to_images + ' ' + path_to_csv)
+system('python main/app.py ' + path_to_images + ' ' + path_to_images + ' ' + path_to_csv)

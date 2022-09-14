@@ -110,7 +110,7 @@ next_label_id = df['colors'].max()+1
 
 #############################################################################
 
-header = html.H1("Image Labeling Tool", style={'color': 'CornflowerBlue'})
+header = html.H1('Image Labeling Tool' + csv_basename, style={'color': 'CornflowerBlue'})
 
 #button_group_1 = dbc.ButtonGroup(
 #    [
@@ -372,6 +372,8 @@ def save_csv(df_updated, csv_name):
     global csv_folder
     filename = join(csv_folder, csv_name)
     df_updated.to_csv(filename, index=False)
+    backup = join(csv_folder, csv_name[:-4] + '_backup.csv')
+    df_updated.to_csv(backup, index=False)
     print('\ncsv recorded.\n')
 
 ##############################################################################################################
