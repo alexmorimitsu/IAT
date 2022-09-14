@@ -2,9 +2,9 @@ import shutil
 from random import shuffle
 from math import ceil
 from os import listdir, mkdir, system
-from os.path import isfile, isdir, join, exists
+from os.path import isfile, isdir, join, exists, getmtime
 from knn_labeling import run_knn
-import pandas as pd
+from time import strftime, localtime
 
 def map_ids(images_path):
     map_id_to_batch = {}    
@@ -19,7 +19,11 @@ def map_ids(images_path):
 def print_batches(dataframes_path, map_id_to_batch):
     for key in map_id_to_batch.keys():
         csv_name = map_id_to_batch[key] + '_verao_g2.csv'
-        print('batch ' + str(key) + ': ' + csv_name)
+        mod_time = getmtime(join(dataframes_path, csv_name))
+        mod_date = strftime('%Y-%m-%d %H:%M:%S', localtime(mod_time))
+        
+        print('batch ' + str(key) + ': \t' + csv_name + ' \tLast modification: ' + mod_date)
+
 
 def check_input(text, max_num):
     try:    
@@ -28,34 +32,6 @@ def check_input(text, max_num):
         return True
     except:
         print('Batch size should be an integer between 1 and', max_num)
-        
-def show_status(batches_path, dataframes_path):
-    batch1_is_labeled = False
-
-    batches_list = listdir(batches_path)
-    batches_list.sort()
-    print()
-    for batch in batches_list:
-        batch_file = dataframes_path + batch + '.csv'
-        if isfile(batch_file):
-            df = pd.read_csv(batch_file)
-            not_labeled = 0
-            value_counts = df['colors'].value_counts()
-            if 0 in value_counts:
-                not_labeled = value_counts[0]
-            num_rows = len(df)
-            num_labeled = num_rows-not_labeled
-            
-            if not_labeled == 0:
-                print(batch, '-> features are already extracted. All ' + str(num_rows) + ' images are labeled.')
-                if batch == 'batch0001':
-                    batch1_is_labeled = True
-            else:
-                print(batch, '-> features are already extracted. ' + str(num_labeled) + ' out of ' + str(num_rows) + ' images are labeled.')
-               
-        else:
-            print(batch, '-> needs features extraction.')
-    return batch1_is_labeled
 
 projects_path = 'main/assets/'
 

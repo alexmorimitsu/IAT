@@ -177,7 +177,7 @@ button_group_6 = dbc.ButtonGroup(
 
 button_group_7 = dbc.ButtonGroup(
     [
-        dcc.Checklist([' Save CSV after labeling'], value = [], id = 'check_save_csv'),
+        dcc.Checklist([' Save CSV after labeling'], value = [' Save CSV after labeling'], id = 'check_save_csv'),
     ],
     #vertical=True,
     className='my-btn-group',
@@ -265,7 +265,6 @@ app.layout = html.Div([
         dbc.Row(
             [
                 dbc.Col([
-                    dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "74vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
                     dbc.Row([
 #                        dbc.Col(
 #                            dbc.Button("Map of images",n_clicks=0, id='button_map_images', style={'background':'chocolate', 'width':'100%'})
@@ -307,6 +306,8 @@ app.layout = html.Div([
                             dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
                         , width={'size': 2}),
                     ], align='bottom'),
+                    dcc.Graph(id="g_scatter_plot", figure=fig, style={"height": "74vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+                    
                 ], width={"size": 7}),
                 
                 dbc.Col([
@@ -320,6 +321,13 @@ app.layout = html.Div([
                         dbc.Col(button_group_2, width={"size": 12})
                     ]),
                     dbc.Row([dbc.Col(html.Hr()),],),
+                    dbc.Row([
+                        dbc.Col(button_group_6, width={"size": 4}),
+                        dbc.Col(button_group_9, width={"size": 5}),
+                        dbc.Col(
+                            dcc.Dropdown(dropdown_image_vals, value='Similarity', id='dropdown_order_images', clearable = False)
+                        , width={'offset': 0, 'size': 3})
+                    ]),
 
                     dbc.Row(
                         html.Div(imageselector.ImageSelector(id='g_image_selector', images=IMAGES,
@@ -328,13 +336,6 @@ app.layout = html.Div([
                             )
                         ),
 
-                    dbc.Row([
-                        dbc.Col(button_group_6, width={"size": 4}),
-                        dbc.Col(button_group_9, width={"size": 5}),
-                        dbc.Col(
-                            dcc.Dropdown(dropdown_image_vals, value='Similarity', id='dropdown_order_images', clearable = False)
-                        , width={'offset': 0, 'size': 3})
-                    ]),
                     ], width={"size": 5}),
                     
             ]),
@@ -387,7 +388,7 @@ def save_csv(df_updated, csv_name):
     backup_path = join(csv_folder, 'backups')
     if not exists(backup_path):
         mkdir(backup_path)
-    backup_path = join(backup_path, csv_name[:-4] + '_' + str(date.today()) + '.csv')
+    backup_path = join(backup_path, csv_name[:-4] + '_bkp' + str(date.today()) + '.csv')
     df_updated.to_csv(backup_path, index=False)
     print('\ncsv recorded.\n')
 
