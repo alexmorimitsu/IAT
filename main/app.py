@@ -35,14 +35,17 @@ def init(argv):
 
         argv (list):
             [1] (string): path to the images
-            [2] (string): input CSV
-            [3] (string): User ID (default 1)
-            [4] (string): Port to run the app (default 8025)
+            [2] (string): path to the thumbnails
+            [3] (string): input CSV
+            [4] (string): n = range of the graph (x = [-n, n], y = [-n, n])
     """
     
     path_to_images = argv[1]
     path_to_thumbnails = argv[2]
     csv_file = argv[3]
+    graph_range = 80
+    if len(argv) > 4:
+        graph_range = int(argv[4])
 
     print('imgs:', path_to_images)
     print('thumbnails:', path_to_thumbnails)
@@ -56,13 +59,9 @@ def init(argv):
     background_path = join('main', 'assets', project_name, 'backgrounds', batch_str + '.png')
     
     user_id = 0
-    if len(argv) > 4:
-        port = int(argv[4])
     port = 8025
-    if len(argv) > 5:
-        port = int(argv[5])
 
-    return path_to_images, path_to_thumbnails, csv_file, csv_folder, csv_basename, background_path, user_id, port
+    return path_to_images, path_to_thumbnails, csv_file, csv_folder, csv_basename, background_path, user_id, port, graph_range
 
 def read_input_csv(csv_file):
     """
@@ -80,13 +79,17 @@ def init_appearance():
     background_color = 'rgba(255, 250, 240, 100)'
     return background_color
 
-path_to_images, path_to_thumbnails, csv_file, csv_folder, csv_basename, background_path, user_id, port = init(sys.argv)
+path_to_images, path_to_thumbnails, csv_file, csv_folder, csv_basename, background_path, user_id, port, graph_range = init(sys.argv)
 df = read_input_csv(csv_file)
+thumbs_jpg = False
+if 'thumbnails' in df.columns:
+    thumbs_jpg = True 
+
 widths, heights = compute_img_ratios(path_to_images, df['names'])
 df['widths'] = widths
 df['heights'] = heights
 
-background_ranges = {'x': [df['x'].min(), df['x'].max()], 'y': [df['y'].min(), df['y'].max()]}
+background_ranges = {'x': [-graph_range, graph_range], 'y': [-graph_range, graph_range]}
 
 init_par_coords = False #used for recomputing the intervals of the parcoords
 
@@ -217,7 +220,8 @@ IMAGES = create_list_dics(
 #    _list_tags='')
 
 #fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=list(df['custom_data']))
-fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[], background_img=background_path)
+fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[], background_img=background_path,
+                            xrange = background_ranges['x'], yrange=background_ranges['y'])
 
 #_columns_paralelas_coordenadas = ['Layer_A', 'Layer_B', 'Layer_C', 'Layer_D', 'Layer_E', 'Layer_F', 'Layer_G']
 _columns_paralelas_coordenadas = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
@@ -232,6 +236,8 @@ fig_paral =  f_figure_paralelas_coordenadas(
                     )
 
 ##############################################################################################################
+
+dropdown_image_vals = ['A-Z, a-z', 'Frequency']
 
 app.layout = html.Div([
     dbc.Container(
@@ -294,7 +300,7 @@ app.layout = html.Div([
 #                            html.Div()
 #                        , width={'size': 1}),
                         dbc.Col(
-                            dcc.Dropdown(['(class) A-Z, a-z', '(class) Frequency', '(binary) A-Z, a-z', '(binary) Frequency'], value='(class) A-Z, a-z', id='dropdown_order_labels', clearable = False)
+                            dcc.Dropdown(dropdown_image_vals, value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
                         , width={'size': 2}),
                     ], align='bottom'),
                 ], width={"size": 7}),
@@ -666,7 +672,7 @@ def scatter_plot_image_selector(
     s_chart_flag_data,
     ):
 
-    global path_to_images, path_to_thumbnails, background_path, widths, heights
+    global path_to_images, path_to_thumbnails, background_path, widths, heights, thumbs_jpg
 
     prev_fig = go.Figure(s_g_scatter_plot_figure)
 
@@ -691,7 +697,7 @@ def scatter_plot_image_selector(
 
         fig_scatter = f_figure_scatter_plot(_df, _columns=['x', 'y'], _selected_custom_data=selected_points, prev_fig = prev_fig, order_by=i_dropdown_order_labels_value,
                                             background_img=background_path, opacity_changed = opacity_changed, opacity = i_slider_map_opacity_value,
-                                            marker_size = i_slider_marker_size_value)
+                                            marker_size = i_slider_marker_size_value,xrange = background_ranges['x'], yrange=background_ranges['y'])
         
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         if i_dropdown_order_images_value == 'Similarity': # show similar images close to each other
@@ -718,10 +724,12 @@ def scatter_plot_image_selector(
             
         _image_teste_list_correct_label = ordered_df['correct_label']
         _image_teste_list_names = ordered_df['names']
-        _image_teste_list_thumbs = ordered_df['names']
         
-        if thumbs
-        
+        if thumbs_jpg:
+            _image_teste_list_thumbs = ordered_df['thumbnails']
+        else:
+            _image_teste_list_thumbs = ordered_df['names']
+
         
         _image_teste_list_widths = ordered_df['widths']
         _image_teste_list_heights = ordered_df['heights']
@@ -742,7 +750,7 @@ def scatter_plot_image_selector(
         
         fig2 = create_list_dics(
             _list_src=list(path_to_images + _image_teste_list_names),
-            _list_thumbnail=list(path_to_thumbnails + _image_teste_list_names),
+            _list_thumbnail=list(path_to_thumbnails + _image_teste_list_thumbs),
             _list_name_figure=list(_image_teste_list_names),
             _list_thumbnailWidth=list(_image_teste_list_widths),
             _list_thumbnailHeight=list(_image_teste_list_heights),

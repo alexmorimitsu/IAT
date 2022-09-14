@@ -6,6 +6,21 @@ from os.path import isfile, isdir, join, exists
 from knn_labeling import run_knn
 import pandas as pd
 
+def map_ids(images_path):
+    map_id_to_batch = {}    
+    l = listdir(join('main', images_path))
+    l.sort()
+    
+    for i in range(len(l)):
+        map_id_to_batch[i+1] = l[i]
+    
+    return map_id_to_batch
+
+def print_batches(dataframes_path, map_id_to_batch):
+    for key in map_id_to_batch.keys():
+        csv_name = map_id_to_batch[key] + '_verao_g2.csv'
+        print('batch ' + str(key) + ': ' + csv_name)
+
 def check_input(text, max_num):
     try:    
         assert int(text) > 0
@@ -14,24 +29,6 @@ def check_input(text, max_num):
     except:
         print('Batch size should be an integer between 1 and', max_num)
         
-
-def check_case(text, dataframes_path = None):
-    if text == 'ALL':
-        for i in range(num_batches):
-            prepare_data('dataframes/batch{:04d}'.format(i+1), join(batches_path, 'batch{:04d}'.format(i+1)))
-            print('\nBatch', i+1, 'prepared.\n')
-        return False
-    elif text == 'SKIP':
-        return False
-    else:
-        while not check_input(text, num_batches):
-            text = input('\nChoose batch number for feature extraction: ')
-        batch_id = int(text)
-
-        prepare_data(dataframes_path + 'batch{:04d}'.format(batch_id), join(batches_path, 'batch{:04d}'.format(batch_id)))
-        
-        return True
-
 def show_status(batches_path, dataframes_path):
     batch1_is_labeled = False
 
@@ -62,21 +59,26 @@ def show_status(batches_path, dataframes_path):
 
 projects_path = 'main/assets/'
 
-project_name = 'lroot_g4'
+project_name = 'verao_g2'
 
 dataframes_path = 'main/assets/' + project_name + '/dataframes/'
 samples_path = 'main/assets/' + project_name + '/samples/' + project_name
 images_path = 'assets/' + project_name + '/images/'
+thumbnails_path = 'assets/' + project_name + '/thumbnails/'
 batches_path = join('main', images_path)
 
 num_batches = len(listdir(batches_path))
+
+map_id_to_batch = map_ids(images_path)
+print_batches(dataframes_path, map_id_to_batch)
 
 text = input('\nChoose batch for labeling: ')
 while not check_input(text, num_batches):
     text = input('\nChoose batch for labeling: ')
 batch_id = int(text)
 
-path_to_images = join(images_path, 'batch{:04d}'.format(batch_id), 'samples/')
-path_to_csv = dataframes_path + 'batch{:04d}'.format(batch_id) + '_g4.csv'
+path_to_images = join(images_path, map_id_to_batch[batch_id], 'samples/')
+path_to_thumbnails = join(thumbnails_path, map_id_to_batch[batch_id], 'samples/')
+path_to_csv = dataframes_path + map_id_to_batch[batch_id] + '_verao_g2.csv'
 
-system('python main/app.py ' + path_to_images + ' ' + path_to_images + ' ' + path_to_csv)
+system('python main/app.py ' + path_to_images + ' ' + path_to_thumbnails + ' ' + path_to_csv + ' 100')
