@@ -237,7 +237,11 @@ fig_paral =  f_figure_paralelas_coordenadas(
 
 ##############################################################################################################
 
-dropdown_image_vals = ['A-Z, a-z', 'Frequency']
+dropdown_image_vals = ['A-Z, a-z', 'Similarity']
+if df.shape[1] > 30: #> v0.3 
+    for i in range(22,34):
+        dropdown_image_vals.append(df.columns[i])
+dropdown_image_vals.sort()
 
 app.layout = html.Div([
     dbc.Container(
@@ -300,7 +304,7 @@ app.layout = html.Div([
 #                            html.Div()
 #                        , width={'size': 1}),
                         dbc.Col(
-                            dcc.Dropdown(dropdown_image_vals, value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
+                            dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
                         , width={'size': 2}),
                     ], align='bottom'),
                 ], width={"size": 7}),
@@ -328,7 +332,7 @@ app.layout = html.Div([
                         dbc.Col(button_group_6, width={"size": 4}),
                         dbc.Col(button_group_9, width={"size": 5}),
                         dbc.Col(
-                            dcc.Dropdown(['Similarity', 'A-Z, a-z'], value='Similarity', id='dropdown_order_images', clearable = False)
+                            dcc.Dropdown(dropdown_image_vals, value='Similarity', id='dropdown_order_images', clearable = False)
                         , width={'offset': 0, 'size': 3})
                     ]),
                     ], width={"size": 5}),
@@ -702,6 +706,8 @@ def scatter_plot_image_selector(
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
         if i_dropdown_order_images_value == 'Similarity': # show similar images close to each other
             ordered_df = filtered_df.sort_values(by='D7') 
+        elif i_dropdown_order_images_value != 'A-Z, a-z':
+            ordered_df = filtered_df.sort_values(by=i_dropdown_order_images_value) 
         else:
             ordered_df = filtered_df.sort_values(by='manual_label') 
             
