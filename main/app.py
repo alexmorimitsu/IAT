@@ -27,6 +27,7 @@ from os.path import exists, join, dirname, basename
 import shutil
 import webbrowser
 from timeit import default_timer as timer
+from datetime import date
 
 def init(argv):
     """
@@ -43,15 +44,15 @@ def init(argv):
     path_to_thumbnails = argv[2]
     csv_file = argv[3]
 
-    print('img', path_to_images)
-    print('csv', csv_file)
-
+    print('imgs:', path_to_images)
+    print('thumbnails:', path_to_thumbnails)
+    print('csv:', csv_file)
 
     project_name = path_to_images.split('/')[1]
-    batch_str = csv_file[-13:-4]
-
+    
     csv_folder = dirname(csv_file)
     csv_basename = basename(csv_file)
+    batch_str = csv_basename[:-4]
     background_path = join('main', 'assets', project_name, 'backgrounds', batch_str + '.png')
     
     user_id = 0
@@ -110,7 +111,7 @@ next_label_id = df['colors'].max()+1
 
 #############################################################################
 
-header = html.H1('Image Labeling Tool' + csv_basename, style={'color': 'CornflowerBlue'})
+header = html.H1('Image Labeling Tool - ' + csv_basename[:-4], style={'color': 'CornflowerBlue'})
 
 #button_group_1 = dbc.ButtonGroup(
 #    [
@@ -372,8 +373,12 @@ def save_csv(df_updated, csv_name):
     global csv_folder
     filename = join(csv_folder, csv_name)
     df_updated.to_csv(filename, index=False)
-    backup = join(csv_folder, csv_name[:-4] + '_backup.csv')
-    df_updated.to_csv(backup, index=False)
+    
+    backup_path = join(csv_folder, 'backups')
+    if not exists(backup_path):
+        mkdir(backup_path)
+    backup_path = join(backup_path, csv_name[:-4] + '_' + str(date.today()) + '.csv')
+    df_updated.to_csv(backup_path, index=False)
     print('\ncsv recorded.\n')
 
 ##############################################################################################################
@@ -713,6 +718,10 @@ def scatter_plot_image_selector(
             
         _image_teste_list_correct_label = ordered_df['correct_label']
         _image_teste_list_names = ordered_df['names']
+        _image_teste_list_thumbs = ordered_df['names']
+        
+        if thumbs
+        
         
         _image_teste_list_widths = ordered_df['widths']
         _image_teste_list_heights = ordered_df['heights']
