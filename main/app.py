@@ -196,8 +196,9 @@ button_group_8 = dbc.ButtonGroup(
 button_group_9 = dbc.ButtonGroup(
     [
         dcc.Checklist([' Marked images first'], value = [], id = 'check_marked_first'),
+        dcc.Checklist([' Hide relabeled images'], value = [], id = 'check_discard_relabeled'),
     ],
-#    vertical=True,
+    vertical=True,
     className='my-btn-group',
     size="lg",
 )
@@ -653,6 +654,7 @@ def mudanca_custom_data(
     Input('slider_marker_size', 'value'),
     Input('dropdown_order_images', 'value'),
     Input('check_marked_first', 'value'),
+    Input('check_discard_relabeled', 'value'),
     ],
     [
     State('g_scatter_plot', 'figure'),
@@ -670,6 +672,7 @@ def scatter_plot_image_selector(
     i_slider_marker_size_value, 
     i_dropdown_order_images_value,
     i_check_marked_first_value,
+    i_check_discard_relabeled_value,
     s_g_scatter_plot_figure,
     s_g_image_selector_images,
     s_g_coordenadas_paralelas_figure,
@@ -688,7 +691,7 @@ def scatter_plot_image_selector(
     print(flag_callback)
 
     if flag_callback in ['selected_custom_points', 'dropdown_order_labels', 'slider_map_opacity', 'slider_marker_size',
-                         'dropdown_order_images', 'check_marked_first']:
+                         'dropdown_order_images', 'check_marked_first', 'check_discard_relabeled']:
    
         opacity_changed = False
         if flag_callback == 'slider_map_opacity':
@@ -705,6 +708,10 @@ def scatter_plot_image_selector(
                                             marker_size = i_slider_marker_size_value,xrange = background_ranges['x'], yrange=background_ranges['y'])
         
         filtered_df = _df.loc[_df['custom_data'].isin(selected_points)]
+
+        if i_check_discard_relabeled_value == [' Hide relabeled images']:
+            filtered_df = filtered_df[filtered_df['manual_label'] == filtered_df['correct_label']]    
+        
         if i_dropdown_order_images_value == 'Similarity': # show similar images close to each other
             ordered_df = filtered_df.sort_values(by='D7') 
         elif i_dropdown_order_images_value != 'A-Z, a-z':
