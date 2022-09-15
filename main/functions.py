@@ -240,6 +240,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
 
     # determinar intervalos para selecoes de constraint range
     _list_constraint_range = []
+        
 
     if _fig == None:
         if _selected_custom_data == []:
