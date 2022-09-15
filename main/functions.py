@@ -275,8 +275,8 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
 
     dimensions_dict = pd.DataFrame(_data)
     dimensions_dict = dimensions_dict.to_dict('records')
-    for i in range(len(dimensions_dict)):
-        dimensions_dict[i]['ticktext'] = []
+    #for i in range(len(dimensions_dict)):
+    #    dimensions_dict[i]['ticktext'] = []
         #dimensions_dict[i]['tickvals'] = []
         #dimensions_dict[i]['label'] = ''
 
@@ -285,7 +285,7 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
     #print('count: ', values, counts)
 
     layout = go.Layout(
-        margin={'l': 10, 'r': 10, 'b': 5, 't': 5},
+#        margin={'l': 10, 'r': 10, 'b': 5, 't': 5},
         paper_bgcolor = background_color,
     )
 
@@ -300,9 +300,8 @@ def f_figure_paralelas_coordenadas(_df, _filtered_df, _columns, _selected_custom
                 cmax=max_color
             ),
             dimensions = dimensions_dict,
-            tickfont = {'color': 'rgba(39,43,48,0)'},
-            customdata = _df['custom_data'],
-            )
+            customdata = _df['custom_data']
+    )
         
 
     
@@ -340,7 +339,7 @@ def update_df_paralelas_coord(
     parcoord_index = int( list( _new_dim_vals[0].keys())[0] . split('.')[0][-2:-1] )
     i = parcoord_index
     points_in_i = []
-    _vals = _df['D' + str(i+1)].tolist()
+    _vals = _df[_list_columns[i]].tolist()
     _data = _df['custom_data'].tolist()
 
     if 'constraintrange' in curr_dims[i]:

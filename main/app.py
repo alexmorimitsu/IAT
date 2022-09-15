@@ -225,7 +225,11 @@ fig = f_figure_scatter_plot(df, _columns=['x', 'y'], _selected_custom_data=[], b
                             xrange = background_ranges['x'], yrange=background_ranges['y'])
 
 #_columns_paralelas_coordenadas = ['Layer_A', 'Layer_B', 'Layer_C', 'Layer_D', 'Layer_E', 'Layer_F', 'Layer_G']
-_columns_paralelas_coordenadas = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
+if df.shape[1] < 30: #v0.2
+    _columns_paralelas_coordenadas = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
+else: #v0.3
+    _columns_paralelas_coordenadas = ['D1', 'D4', 'D7', 'Area (pxl)', 'circularity', 'Elongation', 'Mean Intensity']
+
 
 fig_paral =  f_figure_paralelas_coordenadas(
                         _df=df,
