@@ -240,7 +240,7 @@ fig_paral =  f_figure_paralelas_coordenadas(
 
 dropdown_image_vals = ['A-Z, a-z', 'Similarity']
 if df.shape[1] > 30: #> v0.3 
-    for i in range(22,34):
+    for i in range(19,30):
         dropdown_image_vals.append(df.columns[i])
 dropdown_image_vals.sort()
 
