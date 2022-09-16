@@ -1,7 +1,6 @@
 
 import sys
 
-from pyrsistent import s
 assert len(sys.argv) >= 3
 
 from functions import *
