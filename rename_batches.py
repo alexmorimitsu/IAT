@@ -1,8 +1,8 @@
 from os import listdir, rename
 from os.path import join,  isfile
 
-to_add = '_verao_g2'
-project_name = 'verao_g2'
+to_add = '_g4'
+project_name = 'lroot_g4'
 
 path_csvs = 'main/assets/' + project_name + '/dataframes/'
 list_csvs = [f for f in listdir(path_csvs) if isfile(join(path_csvs, f))]
