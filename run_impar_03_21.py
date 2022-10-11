@@ -35,7 +35,7 @@ def check_input(text, max_num):
 
 projects_path = 'main/assets/'
 
-project_name = 'verao_impar_03_21'
+project_name = 'impar_03_21'
 
 dataframes_path = 'main/assets/' + project_name + '/dataframes/'
 samples_path = 'main/assets/' + project_name + '/samples/' + project_name
