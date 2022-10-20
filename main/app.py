@@ -243,8 +243,20 @@ fig_paral =  f_figure_paralelas_coordenadas(
 
 dropdown_image_vals = ['A-Z, a-z', 'Similarity']
 if df.shape[1] > 30: #> v0.3 
-    for i in range(19,30):
-        dropdown_image_vals.append(df.columns[i])
+    dropdown_image_vals.extend( [
+        'Image State (T/F)',
+        'SegmentationMethod',
+        'Area (pxl)',
+        'Image Width (pxl)',
+        'Image Size (pxl)',
+        'circularity',
+        'Elongation',
+        'Rectangularity',
+        'Mean Intensity',
+        'Median Intensity',
+        'Contrast',
+        'Solidity'        
+    ])
 dropdown_image_vals.sort()
 
 app.layout = html.Div([

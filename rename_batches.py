@@ -1,7 +1,7 @@
 from os import listdir, rename
 from os.path import join,  isfile, exists
 
-project_names = ['verao_impar_01_21', 'verao_impar_02_21', 'verao_impar_03_21', 'verao_impar_04_21', 'verao_impar_05_21', 'verao_impar_06_21']
+project_names = ['verao_impar_12_20', 'verao_impar_01_21', 'verao_impar_02_21', 'verao_impar_03_21', 'verao_impar_04_21', 'verao_impar_05_21', 'verao_impar_06_21']
 path = 'main/assets'
 
 for project in project_names:
