@@ -11,7 +11,7 @@ Instale o pandas:
 Instale o pillow:
 	conda install pillow
 Instale o dash:
-	conda install dash
+	pip install dash=2.2.0
 	conda install -c conda-forge dash-bootstrap-components
 	conda install dash-html-components
 
