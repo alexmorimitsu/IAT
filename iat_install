@@ -5,6 +5,7 @@ Use o terminal para baixar o IAT na pasta desejada:
 
 Instale o miniconda:
 	Seguir o tutorial em https://www.how2shout.com/linux/install-miniconda-on-ubuntu-22-04-lts-jammy-linux/
+Fechar o terminal e abrir um novo
 Crie um ambiente conda (testado: Python 3.7):
 	conda create -n iat python=3.7
 Ative o ambiente conda:
