@@ -59,4 +59,4 @@ path_to_csv = dataframes_path + map_id_to_batch[batch_id] + '.csv'
 
 print(path_to_csv)
 
-system('python main/app.py ' + path_to_images + ' ' + path_to_thumbnails + ' ' + path_to_csv + ' 80')
+system('python main/app.py ' + path_to_images + ' ' + path_to_thumbnails + ' ' + path_to_csv + ' 100')
