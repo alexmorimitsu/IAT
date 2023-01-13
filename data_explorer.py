@@ -196,6 +196,7 @@ def update_batches_list(project_name):
     Output('alert_save_dataset', 'children'),
     Output('alert_save_dataset', 'is_open'),
     Output('alert_save_dataset', 'color'),
+    Output('alert_save_dataset', 'duration'),
     Input('button_save_dataset', 'n_clicks'),
     State('input_save_dataset', 'value'),
     State('dropdown_project', 'value'),
@@ -212,13 +213,13 @@ def save_dataset(nclicks, save_folder, project_name, selected_batches, selected_
         output_folder = join(default_output_folder, save_folder)
 
         if project_name == '':
-            return 'No project was selected', True, 'warning'
+            return 'No project was selected', True, 'warning', 5000
         elif len(selected_batches) == 0:
-            return 'No batches were selected', True, 'warning'
+            return 'No batches were selected', True, 'warning', 5000
         elif len(selected_classes) == 0:
-            return 'No classes were selected', True, 'warning'        
+            return 'No classes were selected', True, 'warning', 5000  
         elif exists(output_folder):
-            return save_folder + ' already exists! Choose another name.', True, 'warning'
+            return save_folder + ' already exists! Choose another name.', True, 'warning', 5000
 
         else:
             count = 0
@@ -256,7 +257,7 @@ def save_dataset(nclicks, save_folder, project_name, selected_batches, selected_
                     label_path = join(output_folder, label)
                     copy2(join(batch_images_folder, name), join(label_path, name))
             loadbar_save_dataset = 0        
-            return save_folder + ' saved succesfully', True, 'success'
+            return save_folder + ' saved succesfully', True, 'success', None
     return False
 
 port = 8030
@@ -267,5 +268,5 @@ if not opened:
     opened = True
 
 if __name__ == '__main__':
-    app.title = 'ILT'
+    app.title = 'ILT Data Explorer'
     app.run_server(debug=False, port=port)
