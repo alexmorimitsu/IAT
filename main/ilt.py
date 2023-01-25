@@ -12,6 +12,7 @@ from shutil import copy2
 
 from functions import *
 from utils import *
+from graph_updates import *
 import imageselector
 from datetime import date
 
@@ -58,10 +59,14 @@ def load_scatterplot(df, opacity, marker_size, order_by, prev_selection,
     list_candidates = [f for f in listdir(background_path) if batch_name in f] # match backgrounds in both jpg and png formats
     background_img = join(background_path, list_candidates[0])
 
+    selected_points = []
+    if prev_selection is not None:
+        selected_points = [p['customdata'] for p in prev_selection['points']]
+
     fig = f_figure_scatter_plot(
         df,
         _columns=['x', 'y'],
-        _selected_custom_data=[],
+        _selected_custom_data=selected_points,
         background_img=background_img,
         opacity=opacity,
         marker_size=marker_size,
@@ -176,11 +181,13 @@ app.layout = html.Div([
                         dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
                     , width={'size': 2}),
                 ], align='bottom'),
-                dcc.Graph(id="graph_scatterplot", figure={}, style={"height": "68vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+                dcc.Graph(id="graph_scatterplot", figure={}, style={"height": "64vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+                dcc.Graph(id="graph_histogram", figure={}, style={'height': '18vh', 'margin-top': '1vh'}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']} ),
             ], width=6),
             dbc.Col([
                 dbc.Row([
-                    dcc.Checklist([' Save CSV after labeling'], value = [' Save CSV after labeling'], id = 'check_save_csv'),
+                    dbc.Col(dcc.Checklist([' Save CSV after labeling'], value = [' Save CSV after labeling'], id = 'check_save_csv'), width=6),
+                    dbc.Col(dcc.Checklist([' Discard image after labeling'], value = [' Discard image after labeling'], id = 'check_discard_image'), width=6),
                 ]),
                 dbc.Row([
                     dbc.Col(
@@ -262,11 +269,12 @@ def update_dropdown_batch(batch_name):
     State('button_load_batch_clicks', 'data'),
     State('graph_scatterplot', 'selectedData'),
     State('check_save_csv', 'value'),
+    State('check_discard_image', 'value'),
     State('input_label_images', 'value'),
     State('div_image_selector', 'images'),
 )
 def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks,
-               batch_name, prev_nclicks, prev_selection, check_save, new_label, imageselector_images):
+               batch_name, prev_nclicks, prev_selection, check_save, check_discard, new_label, imageselector_images):
     global fig, df
 
     print('entering load batch')
@@ -288,8 +296,9 @@ def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks,
         marked_images = get_marked_images(imageselector_images)
         update_labels(marked_images, new_label)
         if len(check_save) > 0:
-            print("saving csv")
             save_csv()
+        if len(check_discard) > 0:
+            prev_selection = None
     
     fig = load_scatterplot(df, opacity, marker_size, order_by, prev_selection)
 
@@ -300,6 +309,7 @@ def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks,
     Updates the selected images
 """
 @app.callback(
+    Output('graph_histogram', 'figure'),
     Output('div_image_selector', 'images'),
     Input('graph_scatterplot', 'selectedData'),
 )
@@ -307,9 +317,14 @@ def update_image_selector(selected_data):
     global loaded_project, loaded_batch
 
     print('entering update image selector')
-    if selected_data is not None and len(selected_data) > 0:
+    if selected_data is not None:
         selected_points_ids = [c['customdata'] for c in selected_data['points']]
         filtered_df = df.loc[df['custom_data'].isin(selected_points_ids)]
+
+        ### Histogram update
+        fig_histogram = compute_histogram(filtered_df)
+
+        ### Image selector update
 
         batch_basename = get_batch_basename(loaded_project, loaded_batch)
 
@@ -347,10 +362,10 @@ def update_image_selector(selected_data):
             _list_tags=[[]]*size
         )
 
-        return list_dics
+        return fig_histogram, list_dics
     print('Update image selector = None')
 
-    return []
+    return {}, []
 
 
 port = 8020
