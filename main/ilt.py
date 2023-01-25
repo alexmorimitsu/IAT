@@ -11,7 +11,9 @@ from os.path import join, isdir, exists, isfile
 from shutil import copy2
 
 from functions import *
+from utils import *
 import imageselector
+from datetime import date
 
 def get_projects_list():
     
@@ -45,7 +47,7 @@ def get_batch_basename(project_name, batch_name):
 
     return basename
 
-def load_scatterplot(df, opacity, marker_size, order_by,
+def load_scatterplot(df, opacity, marker_size, order_by, prev_selection,
                      background_ranges = {'x': [-100, 100], 'y': [-100, 100]}):
     global loaded_project, loaded_batch
 
@@ -70,6 +72,34 @@ def load_scatterplot(df, opacity, marker_size, order_by,
 
     return fig
 
+def update_labels(marked_images, new_label):
+    global df
+
+    if new_label != '' and len(marked_images) > 0:
+        rows = df.index[df['custom_data'].isin(marked_images)]
+        df.loc[rows, 'manual_label'] = new_label
+
+def save_csv():
+    global df, loaded_project, loaded_batch
+
+    dataframe_path = join(getcwd(), 'assets', loaded_project, 'dataframes', loaded_batch)
+    print('   ', dataframe_path)
+    
+    df.to_csv(dataframe_path, index=False)
+    
+    backup_folder = join(getcwd(), 'assets', loaded_project, 'dataframes', 'backups')
+    if not exists(backup_folder):
+        mkdir(backup_folder)
+    backup_path = join(backup_folder, loaded_batch[:-4] + '_bkp' + str(date.today()) + '.csv')
+
+    print('   ', backup_path)
+    
+    df.to_csv(backup_path, index=False)
+
+def get_marked_images(imageselector_images):
+    return [i['custom_data'] for i in imageselector_images if i['isSelected']]
+
+
 projects_list = get_projects_list()
 df = pd.DataFrame()
 fig = ''
@@ -80,6 +110,7 @@ empty_list_dics = create_list_dics(
     _list_thumbnail=[],
     _list_name_figure=[]
 )
+suggested_classes = read_list_classes()
 
 app = dash.Dash(
     __name__,
@@ -93,61 +124,89 @@ app = dash.Dash(
 )
 
 app.layout = html.Div([
-    dbc.Row([
-        dbc.Col(html.H1('ILT'), width={'size': 1}),
-        dbc.Col([
-            dbc.Row([
-                dbc.Col(dcc.Dropdown(projects_list, '', placeholder='Select a project', id='dropdown_project', clearable=False), width={'size': 4}),
-                dbc.Col(dcc.Dropdown([], '', placeholder='Select a batch', id='dropdown_batch', clearable=False, style={'display': 'none'}), width={'size': 6}),
-                dbc.Col(dbc.Button('Load batch', n_clicks=0, id='button_load_batch', style={'background':'chocolate', 'width':'100%', 'display': 'none'}), width={'size': 2})
-            ]),
-            dbc.Row(dbc.Col(html.P('', id='p_batch_name'), width={'size': 11}))
-        ], width={'size': 11}),
-    ]),
+    html.Datalist(
+        id='datalist_suggested_classes', 
+        children=[html.Option(value=name) for name in suggested_classes]
+    ),
 
-    dbc.Row([dbc.Col(html.Hr()),],),
+    dbc.Container(
+        dbc.Row([
+            dbc.Col(html.H1('ILT'), width={'size': 1}),
+            dbc.Col([
+                dbc.Row([
+                    dbc.Col(dcc.Dropdown(projects_list, '', placeholder='Select a project', id='dropdown_project', clearable=False), width={'size': 4}),
+                    dbc.Col(dcc.Dropdown([], '', placeholder='Select a batch', id='dropdown_batch', clearable=False, style={'display': 'none'}), width={'size': 6}),
+                    dbc.Col(dbc.Button('Load batch', n_clicks=0, id='button_load_batch', style={'background':'chocolate', 'width':'100%', 'display': 'none'}), width={'size': 2})
+                ]),
+                dbc.Row(dbc.Col(html.P('', id='p_batch_name'), width={'size': 11}))
+            ], width={'size': 11}),
+        ])
+    ,style={'max-width': '100%'},),
 
-    dbc.Row([   
-        dbc.Col([
-            dbc.Row([
-                dbc.Col(
-                    html.Div(
-                        html.P('Background opacity'),    
-                    style={'textAlign': 'left'}), width={'size': 2}),
-                dbc.Col([
-                    dcc.Slider(0, 1, 0.1,
-                        value=0,
-                        id='slider_map_opacity',
-                        marks=None,
-                        tooltip={"placement": "bottom", "always_visible": True},
-                    )], width={'size': 3}),
-                dbc.Col(
-                    html.Div(
-                        html.P('Marker size'),    
-                    style={'textAlign': 'right'})
-                , width={'size': 2}),
-                dbc.Col([
-                    dcc.Slider(1, 25, 3,
-                        value=10,
-                        id='slider_marker_size',
-                        marks=None,
-                        tooltip={"placement": "bottom", "always_visible": True},
-                    )], width={'size': 3}),
-                dbc.Col(
-                    dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
-                , width={'size': 2}),
-            ], align='bottom'),
-            dcc.Graph(id="graph_scatterplot", figure={}, style={"height": "74vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
-        ], width={'size': 7}),
-        dbc.Col([
-            dbc.Row(
-                html.Div(imageselector.ImageSelector(id='div_image_selector', images=empty_list_dics,
-                    galleryHeaderStyle = {'position': 'sticky', 'top': 0, 'height': '0px', 'background': "#000000", 'zIndex': -1},),
-                    id='XXXXXXXXXX', style=dict(height='63vh',overflow='scroll', backgroundColor=background_color)
+    dbc.Row(html.Hr()),
+
+    dbc.Container(
+        dbc.Row([   
+            dbc.Col([
+                dbc.Row([
+                    dbc.Col(
+                        html.Div(
+                            html.P('Opacity'),    
+                        style={'textAlign': 'left'}), width={'size': 2}),
+                    dbc.Col([
+                        dcc.Slider(0, 1, 0.1,
+                            value=0,
+                            id='slider_map_opacity',
+                            marks=None,
+                            tooltip={"placement": "bottom", "always_visible": True},
+                        )], width={'size': 3}),
+                    dbc.Col(
+                        html.Div(
+                            html.P('Marker size'),    
+                        style={'textAlign': 'right'})
+                    , width={'size': 2}),
+                    dbc.Col([
+                        dcc.Slider(1, 25, 3,
+                            value=10,
+                            id='slider_marker_size',
+                            marks=None,
+                            tooltip={"placement": "bottom", "always_visible": True},
+                        )], width={'size': 3}),
+                    dbc.Col(
+                        dcc.Dropdown(['A-Z, a-z', 'Frequency'], value='A-Z, a-z', id='dropdown_order_labels', clearable = False)
+                    , width={'size': 2}),
+                ], align='bottom'),
+                dcc.Graph(id="graph_scatterplot", figure={}, style={"height": "68vh"}, config={'displaylogo':False, 'modeBarButtonsToRemove': ['toImage', 'resetScale2d']}),
+            ], width=6),
+            dbc.Col([
+                dbc.Row([
+                    dcc.Checklist([' Save CSV after labeling'], value = [' Save CSV after labeling'], id = 'check_save_csv'),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Input(
+                            value='',
+                            id='input_label_images',
+                            type="text",
+                            style={'width': '100%', 'background':'Floralwhite'},
+                            list = 'datalist_suggested_classes'
+                        )
+                    , width = 8),
+                    dbc.Col(
+                        dbc.Button('Label', n_clicks=0, id='button_label', style={'background':'chocolate', 'width':'100%'}),
+                    width=4)
+                ]),
+                dbc.Row([dbc.Col(html.Hr()),],),
+
+                dbc.Row(
+                    html.Div(imageselector.ImageSelector(id='div_image_selector', images=empty_list_dics,
+                        galleryHeaderStyle = {'position': 'sticky', 'top': 0, 'height': '0px', 'background': "#000000", 'zIndex': -1},),
+                        id='XXXXXXXXXX', style=dict(height='68vh',overflow='scroll', backgroundColor=background_color)
+                    )
                 )
-            )
-        ], width={'size': 5}),
-    ]),    
+            ], width=True),
+        ])
+    , style={'max-width': '100%'}),
     dcc.Store(id='selected_points_ids', data=0),
     dcc.Store(id='button_load_batch_clicks', data=0),
 
@@ -191,16 +250,23 @@ def update_dropdown_batch(batch_name):
 """
 @app.callback(
     Output('graph_scatterplot', 'figure'),
+    Output('graph_scatterplot', 'selectedData'),
     Output('p_batch_name', 'children'),
     Output('button_load_batch_clicks', 'data'),
     Input('button_load_batch', 'n_clicks'),
     Input('slider_map_opacity', 'value'),
     Input('slider_marker_size', 'value'),
     Input('dropdown_order_labels', 'value'),
+    Input('button_label', 'n_clicks'),
     State('dropdown_batch', 'value'),
-    State('button_load_batch_clicks', 'data')
+    State('button_load_batch_clicks', 'data'),
+    State('graph_scatterplot', 'selectedData'),
+    State('check_save_csv', 'value'),
+    State('input_label_images', 'value'),
+    State('div_image_selector', 'images'),
 )
-def load_batch(nclicks, opacity, marker_size, order_by, batch_name, prev_nclicks):
+def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks,
+               batch_name, prev_nclicks, prev_selection, check_save, new_label, imageselector_images):
     global fig, df
 
     print('entering load batch')
@@ -212,15 +278,23 @@ def load_batch(nclicks, opacity, marker_size, order_by, batch_name, prev_nclicks
 
     if flag_callback == 'button_load_batch' and nclicks > prev_nclicks:
         df = load_dataframe(batch_name)
+        prev_selection = None
     elif len(flag_callback) < 1 or len(df.index) == 0: #page reloaded or df not loaded
         df = pd.DataFrame()
         fig = {}
 
-        return fig, 'No batches loaded.', nclicks
+        return fig, prev_selection, 'No batches loaded.', nclicks
+    elif flag_callback == 'button_label':
+        marked_images = get_marked_images(imageselector_images)
+        update_labels(marked_images, new_label)
+        if len(check_save) > 0:
+            print("saving csv")
+            save_csv()
     
-    fig = load_scatterplot(df, opacity, marker_size, order_by)
+    fig = load_scatterplot(df, opacity, marker_size, order_by, prev_selection)
 
-    return fig, 'Loaded: ' + loaded_project + ' > ' + loaded_batch , nclicks
+    return fig, prev_selection, 'Loaded: ' + loaded_project + ' > ' + loaded_batch , nclicks
+
 
 """
     Updates the selected images
@@ -233,7 +307,7 @@ def update_image_selector(selected_data):
     global loaded_project, loaded_batch
 
     print('entering update image selector')
-    if selected_data is not None:
+    if selected_data is not None and len(selected_data) > 0:
         selected_points_ids = [c['customdata'] for c in selected_data['points']]
         filtered_df = df.loc[df['custom_data'].isin(selected_points_ids)]
 
@@ -242,14 +316,20 @@ def update_image_selector(selected_data):
         images_full_path = join(getcwd(), 'assets', loaded_project, 'images', batch_basename)
         in_folder = listdir(images_full_path)[0]
         images_path = join('assets', loaded_project, 'images', batch_basename, in_folder)
+        list_paths = [join(images_path, f) for f in filtered_df['names']]
+
         thumbnails_full_path = join(getcwd(), 'assets', loaded_project, 'thumbnails')
         if exists(thumbnails_full_path):
             thumbnails_path = join('assets', loaded_project, 'thumbnails', batch_basename, in_folder)
+            list_thumbs = [join(thumbnails_path, f) for f in filtered_df['thumbnails']]
         else:
             thumbnails_path = images_path
+            list_thumbs = list_paths
 
         list_paths = [join(images_path, f) for f in filtered_df['names']]
-        list_thumbs = [join(thumbnails_path, f) for f in filtered_df['thumbnails']]
+        list_labels = filtered_df['manual_label'].tolist()
+        list_captions = ['id: ' + str(id) + ' (' + label + ') - ' + name \
+            for id, label, name in zip(selected_points_ids, list_labels, list_paths)]
         size = len(list_paths)
         print('Update image selector', size)
 
@@ -262,11 +342,10 @@ def update_image_selector(selected_data):
             _list_thumbnailHeight=[10]*size,
             _list_isSelected= [True]*size,
             _list_custom_data=selected_points_ids,
-            _list_caption=filtered_df['manual_label'].tolist(),
-            _list_thumbnailCaption=[[]]*size,
+            _list_caption=list_labels,
+            _list_thumbnailCaption=list_labels,
             _list_tags=[[]]*size
         )
-        print(list_dics)
 
         return list_dics
     print('Update image selector = None')
