@@ -8,7 +8,7 @@ import webbrowser
 import pandas as pd
 from os import listdir, getcwd, mkdir
 from os.path import join, isdir, exists, isfile
-from shutil import copy2
+from shutil import move
 
 from functions import *
 from utils import *
@@ -16,23 +16,117 @@ from graph_updates import *
 import imageselector
 from datetime import date
 
+def create_dir(path):
+    if not exists(path):
+        mkdir(path)
+
 def get_projects_list():
     
-    projects_folder = join(getcwd(), 'assets')
+    projects_folder = join(getcwd(), 'projects')
     projects_list = [f for f in listdir(projects_folder) if isdir(join(projects_folder, f))]
+    assets_folder = join(getcwd(), 'assets')
+    projects_assets_list = [f for f in listdir(assets_folder) if isdir(join(assets_folder, f))]    
+
+    projects_list.extend(x for x in projects_assets_list if x not in projects_list)
     projects_list.sort()
 
     return projects_list
 
 def get_batches_list(project_name):
-    batches_folder = join(getcwd(), 'assets', project_name, 'dataframes')
-    batches_list = [f for f in listdir(batches_folder) if isfile(join(batches_folder, f))]
-    batches_list.sort()
+    batches_projects_list = []
+    batches_assets_list = []
+    batches_finished_list = []
 
-    return batches_list
+    projects_folder = join(getcwd(), 'projects')
+    assets_folder = join(getcwd(), 'assets')
+    finished_folder = join(getcwd(), 'finished_projects')
+
+    if exists(projects_folder) and project_name in listdir(projects_folder):
+        projects_dataframes_folder = join(projects_folder, project_name, 'dataframes')
+        batches_projects_list = [f for f in listdir(projects_dataframes_folder) if isfile(join(projects_dataframes_folder, f))]
+
+    if exists(assets_folder) and project_name in listdir(assets_folder):
+        assets_dataframes_folder = join(assets_folder, project_name, 'dataframes')
+        batches_assets_list = [f for f in listdir(assets_dataframes_folder) if isfile(join(assets_dataframes_folder, f))]
+
+    if exists(finished_folder) and project_name in listdir(finished_folder):
+        finished_dataframes_folder = join(finished_folder, project_name, 'dataframes')
+        batches_finished_list = [f for f in listdir(finished_dataframes_folder) if isfile(join(finished_dataframes_folder, f))]
+
+
+    batches_projects_list.extend(x for x in batches_assets_list if x not in batches_projects_list)
+    batches_projects_list.extend(x for x in batches_finished_list if x not in batches_projects_list)
+
+    batches_projects_list.sort()
+
+    return batches_projects_list, batches_assets_list, batches_finished_list
+
+def get_batch_basename(project_name, batch_name):
+    basename = batch_name[:-4] # remove extension (.csv)
+    if project_name in basename: # if batchName has the format batchName_projectName
+        basename = basename[:-len(project_name)-1]
+
+    return basename
+
+def move_batch_location(batch_name, origin = 'projects', destiny = 'assets'):
+    global loaded_project
+
+    print()
+    print('Moving from', origin, 'to', destiny)
+    print()
+
+    batch_basename = get_batch_basename(loaded_project, batch_name)
+
+    origin_folder = join(getcwd(), origin)
+    destiny_folder = join(getcwd(), destiny)
+    create_dir(destiny_folder)
+    
+    origin_project_folder = join(origin_folder, loaded_project)
+    destiny_project_folder = join(destiny_folder, loaded_project)
+    create_dir(destiny_project_folder)
+
+    dataframes_folder = join(destiny_project_folder, 'dataframes')
+    create_dir(dataframes_folder)
+    move(join(origin_project_folder, 'dataframes', batch_name), join(dataframes_folder, batch_name))
+
+    backgrounds_project_folder = join(origin_project_folder, 'backgrounds')
+    batch_background_name = [f for f in listdir(backgrounds_project_folder) if batch_name[:-4] in f]
+    backgrounds_folder = join(destiny_project_folder, 'backgrounds')
+    create_dir(backgrounds_folder)
+    move(join(origin_project_folder, 'backgrounds', batch_background_name[0]), join(backgrounds_folder, batch_background_name[0]))
+
+    images_folder = join(destiny_project_folder, 'images')
+    create_dir(images_folder)
+    move(join(origin_project_folder, 'images', batch_basename), join(images_folder, batch_basename))
+
+    if 'thumbnails' in listdir(origin_project_folder):
+        thumbnails_folder = join(destiny_project_folder, 'thumbnails')
+        create_dir(thumbnails_folder)
+        move(join(origin_project_folder, 'thumbnails', batch_basename), join(thumbnails_folder, batch_basename))
 
 def load_dataframe(batch_name):
     global loaded_project, loaded_batch
+
+    to_move = False
+    origin = 'projects'
+    destiny = 'assets'
+
+    # if assets folder does not exist
+    assets_project_folder = join(getcwd(), 'assets', loaded_project)
+    if not exists(assets_project_folder):
+        to_move = True
+    # if assets > dataframes does not exist or the file is not there
+    assets_dataframes_folder = join(getcwd(), 'assets', loaded_project, 'dataframes') 
+    if not exists(assets_dataframes_folder) or batch_name not in listdir(assets_dataframes_folder):
+        to_move = True
+
+    finished_dataframes_folder = join(getcwd(), 'finished_projects', loaded_project, 'dataframes') 
+    
+    if exists(finished_dataframes_folder) and batch_name in listdir(finished_dataframes_folder):
+        origin = 'finished_projects'
+
+    if to_move:
+        move_batch_location(batch_name, origin, destiny)
 
     csv_path = join(getcwd(), 'assets', loaded_project, 'dataframes', batch_name)
     df = pd.read_csv(csv_path, encoding='ISO-8859-1')
@@ -41,12 +135,6 @@ def load_dataframe(batch_name):
 
     return df
 
-def get_batch_basename(project_name, batch_name):
-    basename = batch_name[:-4] # remove extension (.csv)
-    if project_name in basename: # if batchName has the format batchName_projectName
-        basename = basename[:-len(project_name)-1]
-
-    return basename
 
 def load_scatterplot(df, opacity, marker_size, order_by, prev_selection,
                      background_ranges = {'x': [-100, 100], 'y': [-100, 100]}):
@@ -214,9 +302,17 @@ app.layout = html.Div([
             ], width=True),
         ])
     , style={'max-width': '100%'}),
+
+    dbc.Row(html.Hr()),
+    dbc.Container(
+        dbc.Row([
+            dbc.Col(dbc.Button('Finish batch', n_clicks=0, id='button_finish_batch', style={'background':'chocolate', 'width':'100%'}), width={'size': 12})
+        ]),
+    ),
     dcc.Store(id='selected_points_ids', data=0),
     dcc.Store(id='button_load_batch_clicks', data=0),
-
+    dcc.Store(id='reload_batches', data=0),
+    dcc.Store(id='reset_graphs', data=0),
 ])
 
 """
@@ -226,19 +322,42 @@ app.layout = html.Div([
     Output('dropdown_batch', 'style'),
     Output('dropdown_batch', 'options'),
     Output('dropdown_batch', 'value'),
-    Input('dropdown_project', 'value')
+    Output('reset_graphs', 'data'),
+    Input('dropdown_project', 'value'),
+    Input('reload_batches', 'data')
 )
-def update_dropdown_batch(project_name):
+def update_dropdown_batch(project_name, reload):
     global loaded_project
 
     print('entering update dropdown batch')
 
-
-    if len(project_name) > 0:
-        batches_list = get_batches_list(project_name)
+    if len(project_name) > 0 or reload > 0:
+        batches_list, batches_assets_list, batches_finished_list = get_batches_list(project_name)
         loaded_project = project_name
-        return  {'display': 'block'}, batches_list, ''
-    return {'display': 'none'}, [], ''
+
+        options = []
+
+        for batch in batches_list:
+            if batch in batches_assets_list:
+                options.append({
+                    'label': batch + ' (in progress)',
+                    'value': batch
+                })
+            elif batch in batches_finished_list:
+                options.append({
+                    'label': batch + ' (finished)',
+                    'value': batch
+                })
+            else:
+                options.append(
+                    {
+                        'label': batch,
+                        'value': batch
+                    }
+                )
+
+        return  {'display': 'block'}, options, '', 1
+    return {'display': 'none'}, [], '', 0
 
 """
     Displays the button to load the batch
@@ -265,6 +384,7 @@ def update_dropdown_batch(batch_name):
     Input('slider_marker_size', 'value'),
     Input('dropdown_order_labels', 'value'),
     Input('button_label', 'n_clicks'),
+    Input('reset_graphs', 'data'),
     State('dropdown_batch', 'value'),
     State('button_load_batch_clicks', 'data'),
     State('graph_scatterplot', 'selectedData'),
@@ -273,7 +393,7 @@ def update_dropdown_batch(batch_name):
     State('input_label_images', 'value'),
     State('div_image_selector', 'images'),
 )
-def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks,
+def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks, reset_graphs,
                batch_name, prev_nclicks, prev_selection, check_save, check_discard, new_label, imageselector_images):
     global fig, df
 
@@ -287,11 +407,11 @@ def load_batch(nclicks, opacity, marker_size, order_by, label_nclicks,
     if flag_callback == 'button_load_batch' and nclicks > prev_nclicks:
         df = load_dataframe(batch_name)
         prev_selection = None
-    elif len(flag_callback) < 1 or len(df.index) == 0: #page reloaded or df not loaded
+    elif len(flag_callback) < 1 or len(df.index) == 0 or flag_callback == 'reset_graphs': #page reloaded or df not loaded
         df = pd.DataFrame()
         fig = {}
 
-        return fig, prev_selection, 'No batches loaded.', nclicks
+        return fig, None, 'No batches loaded.', nclicks
     elif flag_callback == 'button_label':
         marked_images = get_marked_images(imageselector_images)
         update_labels(marked_images, new_label)
@@ -367,6 +487,22 @@ def update_image_selector(selected_data):
 
     return {}, []
 
+"""
+    Finish batch, moving it to the finished_projects folder
+"""
+@app.callback(
+    Output('reload_batches', 'data'),
+    Input('button_finish_batch', 'n_clicks'),
+    State('reload_batches', 'data'),
+
+)
+def finish_batch(nclicks, reload):
+    global loaded_batch
+    
+    if nclicks > 0:
+        move_batch_location(loaded_batch, origin='assets', destiny='finished_projects')
+        return reload+1 
+    return reload
 
 port = 8020
 opened = False
